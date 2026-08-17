@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
+import AnkiExportDialog from '@/components/anki/AnkiExportDialog'
 import { apiFetch } from '@/lib/api'
 import { useLanguageStore } from '@/store/language'
 import { AudioPlayer } from '@/components/ui/AudioPlayer'
@@ -24,6 +25,7 @@ interface CardData {
 }
 
 export default function FlashcardsPage() {
+  const [showAnkiExport, setShowAnkiExport] = useState(false)
   const t = useTranslations('flashcards')
   const tCommon = useTranslations('common')
   const activeLanguage = useLanguageStore((s) => s.activeLanguage)
@@ -147,6 +149,12 @@ export default function FlashcardsPage() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAnkiExport(true)}
+            className="text-fl-label border-fl-border text-fl-muted-2 hover:text-fl-fg hover:border-fl-border-2 border px-4 py-2 font-mono tracking-widest uppercase transition-colors"
+          >
+            {t('exportToAnki')}
+          </button>
           <Link
             href="/flashcards/vocabulary"
             className="text-fl-label border-fl-border text-fl-muted-2 hover:text-fl-fg hover:border-fl-border-2 border px-4 py-2 font-mono tracking-widest uppercase transition-colors"
@@ -424,6 +432,13 @@ export default function FlashcardsPage() {
             {cards[current].repetitions}
           </p>
         </>
+      )}
+      {showAnkiExport && (
+        <AnkiExportDialog
+          endpoint="/api/anki/flashcards"
+          defaultDeckName={`FreeLingo ${activeLanguage?.name ?? ''}`.trim()}
+          onClose={() => setShowAnkiExport(false)}
+        />
       )}
     </div>
   )

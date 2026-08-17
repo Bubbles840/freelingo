@@ -116,6 +116,14 @@ function lessonKey(week: number, day: number, title: string): string {
 export default function PlanPage() {
   const t = useTranslations('plan')
   const router = useRouter()
+
+  // Fork: hand a lesson off to Learn with Lingu (guided or roleplay) — the
+  // lesson runs inline in that tab rather than in the generic conversation.
+  function launchVoiceLesson(lessonId: number, mode: 'guided' | 'roleplay') {
+    setActiveDrawer(null)
+    sessionStorage.setItem('voice_lesson', JSON.stringify({ lessonId, mode }))
+    router.push('/learn')
+  }
   const activeLanguage = useLanguageStore((s) => s.activeLanguage)
   const langName = activeLanguage?.name ?? ''
 
@@ -125,6 +133,7 @@ export default function PlanPage() {
   const [competencies, setCompetencies] = useState<CompetencyMap>({})
   const [activeDrawer, setActiveDrawer] = useState<CurriculumUnit | null>(null)
   const [activeLessonId, setActiveLessonId] = useState<number | null>(null)
+  const [todayPending, setTodayPending] = useState(false)
   const [pendingLessons, setPendingLessons] = useState<PendingLesson[]>([])
   const [lessonStates, setLessonStates] = useState<
     Record<string, Pick<Lesson, 'id' | 'completed' | 'action'>>
@@ -135,14 +144,12 @@ export default function PlanPage() {
     setLoading(true)
     setError('')
     try {
-      const [planRes, compRes, todayRes, pendingRes, lessonsRes] =
-        await Promise.all([
-          apiFetch('/api/study-plan/current'),
-          apiFetch('/api/progress/competencies').catch(() => null),
-          apiFetch('/api/study-plan/today').catch(() => null),
-          apiFetch('/api/study-plan/pending-lessons').catch(() => null),
-          apiFetch('/api/study-plan/lessons').catch(() => null),
-        ])
+      const [planRes, compRes, pendingRes, lessonsRes] = await Promise.all([
+        apiFetch('/api/study-plan/current'),
+        apiFetch('/api/progress/competencies').catch(() => null),
+        apiFetch('/api/study-plan/pending-lessons').catch(() => null),
+        apiFetch('/api/study-plan/lessons').catch(() => null),
+      ])
 
       if (!planRes.ok) {
         if (planRes.status === 404) {
@@ -201,25 +208,37 @@ export default function PlanPage() {
         }
       }
 
-      if (todayRes?.ok) {
-        const todayData = (await todayRes.json()) as {
-          lessons: TodayLesson[]
-        }
-        const nextLesson = todayData.lessons.find(
-          (l) => l.id != null && !l.is_completed
-        )
-        setActiveLessonId(nextLesson?.id ?? null)
-        for (const lesson of todayData.lessons) {
-          if (lesson.id == null) continue
-          states[lessonKey(lesson.week, lesson.day, lesson.title)] = {
-            id: lesson.id,
-            completed: lesson.is_completed ?? false,
-            action: lesson.is_completed ? 'review' : 'start',
-          }
-        }
-      }
-
       setLessonStates(states)
+
+      // Fork: /today lazily GENERATES missing lessons via the LLM, which can
+      // take minutes on a new day. Render the plan immediately and merge
+      // today's actions in when generation finishes.
+      setTodayPending(true)
+      void apiFetch('/api/study-plan/today')
+        .then(async (todayRes) => {
+          if (!todayRes.ok) return
+          const todayData = (await todayRes.json()) as {
+            lessons: TodayLesson[]
+          }
+          const nextLesson = todayData.lessons.find(
+            (l) => l.id != null && !l.is_completed
+          )
+          setActiveLessonId(nextLesson?.id ?? null)
+          setLessonStates((prev) => {
+            const merged = { ...prev }
+            for (const lesson of todayData.lessons) {
+              if (lesson.id == null) continue
+              merged[lessonKey(lesson.week, lesson.day, lesson.title)] = {
+                id: lesson.id,
+                completed: lesson.is_completed ?? false,
+                action: lesson.is_completed ? 'review' : 'start',
+              }
+            }
+            return merged
+          })
+        })
+        .catch(() => {})
+        .finally(() => setTodayPending(false))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load')
     } finally {
@@ -338,6 +357,11 @@ export default function PlanPage() {
 
       {/* ── Unit list ── */}
       <div className="space-y-2">
+        {todayPending && (
+          <p className="text-fl-hint text-fl-muted-3 animate-pulse font-mono">
+            ● {t('preparingToday')}
+          </p>
+        )}
         {units.length === 0 && (
           <div className="border-fl-border bg-fl-surface space-y-3 border px-6 py-10 text-center">
             <p className="text-fl-muted-3 font-mono text-xs tracking-widest uppercase">
@@ -383,6 +407,16 @@ export default function PlanPage() {
               onStartLesson={
                 isActive && activeLessonId != null
                   ? () => router.push(`/lesson/${activeLessonId}`)
+                  : undefined
+              }
+              onPracticeLesson={
+                isActive && activeLessonId != null
+                  ? () => launchVoiceLesson(activeLessonId, 'guided')
+                  : undefined
+              }
+              onRoleplayLesson={
+                isActive && activeLessonId != null
+                  ? () => launchVoiceLesson(activeLessonId, 'roleplay')
                   : undefined
               }
             />
@@ -456,6 +490,8 @@ export default function PlanPage() {
             setActiveDrawer(null)
             router.push(`/lesson/${lessonId}`)
           }}
+          onPracticeLesson={(lessonId) => launchVoiceLesson(lessonId, 'guided')}
+          onRoleplayLesson={(lessonId) => launchVoiceLesson(lessonId, 'roleplay')}
         />
       )}
     </div>

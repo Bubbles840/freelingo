@@ -199,6 +199,10 @@ async def conversation_ws(
         client_conversation_id_raw = auth_msg.get(
             "conversation_id"
         )  # optional: reserved for future API use
+        lesson_id_raw = auth_msg.get("lesson_id")
+        from app.services.lesson_voice import normalize_lesson_mode
+
+        lesson_mode: str = normalize_lesson_mode(auth_msg.get("lesson_mode"))
         if settings.TTS_PROVIDER == "openai":
             _VALID_VOICES = frozenset(
                 {
@@ -360,6 +364,143 @@ async def conversation_ws(
                 target_language = ul.target_language if ul else plan.target_language
             study_plan_id_for_conv = plan.id
 
+        # --- Guided lesson mode: resolve and validate the requested lesson ---
+        # Ownership is proven by the same join chain the REST lessons router uses
+        # (Lesson -> StudyPlan -> UserLanguage.user_id). A lesson_id that is
+        # missing, not owned, or not a positive integer must fail loudly — the
+        # learner explicitly asked for a lesson, so silently falling back to a
+        # normal conversation (like the "no active study plan" case above) would
+        # be wrong here.
+        lesson_session = None
+        roleplay_overlay = ""
+        if lesson_id_raw is not None:
+            from app.models.lesson import Lesson
+            from app.services.lesson_voice import (
+                LessonSession,
+                build_lesson_steps,
+                build_roleplay_overlay,
+            )
+
+            try:
+                lesson_id = int(lesson_id_raw)
+            except (TypeError, ValueError, OverflowError):
+                # OverflowError: json.loads() accepts `Infinity`/`-Infinity` as
+                # float('inf'), which int() cannot convert.
+                lesson_id = 0
+            if not (0 < lesson_id < 2**63):
+                # Reject out-of-range integers too (e.g. 1e30, 2**63) — some
+                # DB drivers raise OverflowError binding an int outside their
+                # native integer width, which we don't want escaping as an
+                # unhandled exception.
+                lesson_id = 0
+            lesson_row = None
+            if lesson_id > 0:
+                lesson_result = await db.execute(
+                    select(Lesson)
+                    .join(StudyPlan, Lesson.study_plan_id == StudyPlan.id)
+                    .join(UserLanguage, StudyPlan.user_language_id == UserLanguage.id)
+                    .where(Lesson.id == lesson_id, UserLanguage.user_id == user_id)
+                )
+                lesson_row = lesson_result.scalar_one_or_none()
+            if lesson_row is None:
+                logger.warning(
+                    "[conversation] Lesson %s not found for user %s — closing WS 1008",
+                    lesson_id,  # coerced int, never the raw client value — avoids log injection
+                    user_id,
+                )
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "code": "lesson_not_found",
+                        "message": "Lesson not available",
+                    }
+                )
+                await websocket.close(code=1008)
+                return
+            lesson_content = lesson_row.content if isinstance(lesson_row.content, dict) else {}
+            lesson_objectives: list[str] = []
+            # Objectives live on the lesson's OWN study plan, not necessarily the
+            # plan already resolved for this conversation (a learner can request
+            # a lesson from a different — but still owned — language/plan than
+            # their currently active one). Reuse `plan` only when it's actually
+            # the same row; otherwise load the right one.
+            if plan is not None and plan.id == lesson_row.study_plan_id:
+                lesson_plan = plan
+            else:
+                lesson_plan_result = await db.execute(
+                    select(StudyPlan).where(StudyPlan.id == lesson_row.study_plan_id)
+                )
+                lesson_plan = lesson_plan_result.scalar_one_or_none()
+            if lesson_plan is not None and isinstance(lesson_plan.generated_plan, dict):
+                weekly_plan = lesson_plan.generated_plan.get("weekly_plan")
+                if isinstance(weekly_plan, list):
+                    for week in weekly_plan:
+                        if not isinstance(week, dict) or week.get("week") != lesson_row.week_number:
+                            continue
+                        days = week.get("days")
+                        if not isinstance(days, list):
+                            continue
+                        for day in days:
+                            if (
+                                isinstance(day, dict)
+                                and day.get("day") == lesson_row.day_number
+                                and isinstance(day.get("objectives"), list)
+                            ):
+                                lesson_objectives = [
+                                    o for o in day["objectives"] if isinstance(o, str)
+                                ]
+                                break
+                        break
+            if lesson_mode == "roleplay":
+                # Fork (roleplay mode): no LessonSession — the pipeline already
+                # gates every lesson-related behaviour on `lesson_session is not
+                # None`, so leaving it unset is enough to make guided-only
+                # machinery (the lesson tool, lesson_state/lesson_completed
+                # frames) inert for this session.
+                roleplay_overlay = build_roleplay_overlay(lesson_content, lesson_row.title)
+                logger.info(
+                    "[conversation] Roleplay session: lesson_id=%s mode=%s",
+                    lesson_row.id,
+                    lesson_mode,
+                )
+            else:
+                # Fork: the lesson page's practice problems live in Exercise
+                # rows — hand them to the step builder so the voice lesson asks
+                # the same questions and can record the learner's answers.
+                from app.models.lesson import Exercise  # noqa: PLC0415
+
+                ex_result = await db.execute(
+                    select(Exercise)
+                    .where(Exercise.lesson_id == lesson_row.id)
+                    .order_by(Exercise.id)
+                )
+                db_exercises = [
+                    {
+                        "id": ex.id,
+                        "question": ex.question,
+                        "options": ex.options,
+                        "correct": ex.correct_answer,
+                        "explanation": ex.explanation,
+                    }
+                    for ex in ex_result.scalars().all()
+                ]
+                lesson_session = LessonSession(
+                    lesson_id=lesson_row.id,
+                    title=lesson_row.title,
+                    steps=build_lesson_steps(
+                        lesson_content,
+                        lesson_objectives,
+                        lesson_row.title,
+                        db_exercises=db_exercises,
+                    ),
+                )
+                logger.info(
+                    "[conversation] Guided lesson session: lesson_id=%s steps=%d mode=%s",
+                    lesson_row.id,
+                    len(lesson_session.steps),
+                    lesson_mode,
+                )
+
         # Read user settings before session closes to avoid DetachedInstanceError
         max_duration = (
             voice_trial.duration_seconds if voice_trial else user.conversation_max_duration
@@ -505,6 +646,28 @@ async def conversation_ws(
         except Exception:
             pass
 
+        # Fork: resume a previously-dropped guided lesson from Redis so a
+        # disconnect doesn't restart it from step one.
+        if lesson_session is not None:
+            try:
+                raw = await redis.get(
+                    f"voice_lesson_progress:{user_id}:{lesson_session.lesson_id}"
+                )
+                if raw:
+                    import json as _json
+
+                    saved = _json.loads(raw)
+                    lesson_session.fast_forward(
+                        int(saved.get("i", 0)), list(saved.get("r", []))
+                    )
+                    logger.info(
+                        "[conversation] Resumed lesson %s at step %s",
+                        lesson_session.lesson_id,
+                        lesson_session.current_index,
+                    )
+            except Exception:  # noqa: BLE001 — resume is best-effort
+                logger.warning("[conversation] Could not resume lesson progress")
+
         pipeline = ConversationPipeline(
             llm=llm_adapter,
             tts=tts_service,
@@ -523,6 +686,12 @@ async def conversation_ws(
             memories=memories,
             voice=voice_pref,
             study_plan_id=study_plan_id_for_conv,
+            pronunciation=getattr(websocket.app.state, "pronunciation_service", None),
+            lesson_session=lesson_session,
+            roleplay_overlay=roleplay_overlay,
+        )
+        pipeline._pronunciation_user_enabled = bool(
+            auth_msg.get("pronunciation_enabled", True)
         )
         pipeline._redis = redis
         pipeline._freemium_voice = freemium_ok

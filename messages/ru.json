@@ -115,7 +115,8 @@
     "contact": "Контакт",
     "feedback": "Feedback",
     "reviews": "Отзывы",
-    "switchLanguage": "Сменить язык"
+    "switchLanguage": "Сменить язык",
+    "learnWithLingu": "Учись с Lingu"
   },
   "auth": {
     "login": {
@@ -317,7 +318,9 @@
     "reviewDeleteMessage": "Вы хотите удалить свой отзыв? Это действие нельзя отменить.",
     "reviewDeleteConfirm": "Удалить",
     "reviewDeleted": "Отзыв удален.",
-    "reviewDeleteError": "Не удалось удалить отзыв. Повторите попытку."
+    "reviewDeleteError": "Не удалось удалить отзыв. Повторите попытку.",
+    "quotaEditLimits": "Изменить лимиты",
+    "quotaCancel": "Отмена"
   },
   "legal": {
     "terms": {
@@ -608,10 +611,18 @@
     "resume": "Продолжить",
     "lessonsHeader": "Уроки · {count}",
     "reviewLesson": "Просмотреть",
+    "practiceWithLingu": "Практика с Lingu",
+    "useInScenario": "Применить в сценке",
     "noPlanLabel": "НАЧАТЬ",
     "noPlanTitle": "Создайте учебный план",
     "noPlanDesc": "Пройдите быструю оценку, чтобы узнать свой уровень и получить персонализированный план обучения.",
-    "noPlanHint": "Займёт около 10 минут"
+    "noPlanHint": "Займёт около 10 минут",
+    "learnTitle": "Учись с Lingu",
+    "learnSubtitle": "Голосовые уроки",
+    "learnToday": "Сегодня",
+    "learnCatchUp": "Наверстать",
+    "learnNone": "Уроки ещё не готовы — см. Мой план.",
+    "preparingToday": "Готовим сегодняшний урок…"
   },
   "lesson": {
     "loading": "Загрузка урока...",
@@ -700,7 +711,20 @@
     "tapToHide": "нажми чтобы скрыть",
     "tapToReveal": "нажми чтобы показать",
     "interval": "Интервал",
-    "repetitions": "Повт"
+    "repetitions": "Повт",
+    "exportToAnki": "Экспорт в Anki",
+    "ankiDeckName": "Название колоды",
+    "ankiCardType": "Тип карточки",
+    "ankiTypeBasic": "Базовая (слово → перевод)",
+    "ankiTypeReversed": "Базовая + обратная (в обе стороны)",
+    "ankiTypeCloze": "Пропуски (в примере)",
+    "ankiIncludeDefinition": "Включить определение",
+    "ankiIncludeExample": "Включить пример",
+    "ankiAiExpand": "Расширить ИИ (спряжения, примеры)",
+    "ankiAiExpandHint": "Медленнее — ИИ расширяет каждую карточку перед экспортом.",
+    "ankiExport": "Экспорт",
+    "ankiCancel": "Отмена",
+    "ankiExportFailed": "Экспорт не удался — попробуйте ещё раз."
   },
   "chat": {
     "title": "ИИ-репетитор",
@@ -1109,6 +1133,7 @@
     "errorUnauthorized": "Сессия истекла. Обновите страницу.",
     "errorMic": "Доступ к микрофону запрещён.",
     "errorVadInit": "Не удалось инициализировать обнаружение речи. Проверьте, поддерживает ли ваш браузер WebAssembly.",
+    "errorLessonNotFound": "Этот урок недоступен. Откройте его снова из вашего плана.",
     "warningTimeout": "Сессия завершится через {seconds}с",
     "sessionEnded": "Сессия завершена",
     "tapToStart": "Говорите, когда будете готовы",
@@ -1159,7 +1184,32 @@
       "Планы на выходные",
       "Работа и карьерные цели",
       "Работа из дома"
-    ]
+    ],
+    "micModeLabel": "Режим микрофона",
+    "micAuto": "Авто",
+    "micManual": "Нажмите, чтобы говорить",
+    "micWaitLabel": "Пауза",
+    "micWaitDefault": "По умолчанию",
+    "micWaitSeconds": "{seconds}s",
+    "tapToTalk": "Нажмите, чтобы говорить",
+    "tapToSend": "Нажмите, чтобы отправить",
+    "pronunciationScore": "Произношение {score}/100",
+    "pronunciationWeakWords": "Поработай над: {words}",
+    "lessonStepProgress": "Шаг {current} из {total}",
+    "lessonNextSection": "Следующий раздел →",
+    "lessonShow": "Показать урок",
+    "lessonHide": "Скрыть урок",
+    "lessonCompleted": "Урок завершён!",
+    "lessonCompletionError": "Не удалось сохранить завершение урока.",
+    "lessonRetry": "Повторить попытку",
+    "translate": "Перевести",
+    "hideTranslation": "Скрыть перевод",
+    "translationFailed": "Не удалось перевести",
+    "addToFlashcards": "Добавить в карточки",
+    "flashcardAdded": "Добавлено",
+    "dismissSuggestion": "Скрыть",
+    "pronunciationOn": "Произношение: вкл",
+    "pronunciationOff": "Произношение: выкл"
   },
   "voiceRecorder": {
     "record": "Запись",

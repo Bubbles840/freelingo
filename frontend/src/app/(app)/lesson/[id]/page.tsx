@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useLocale, useTranslations } from 'next-intl'
+import AnkiExportDialog from '@/components/anki/AnkiExportDialog'
 import { apiFetch } from '@/lib/api'
 import { useProgressStore } from '@/store/progress'
 import { useLanguageStore } from '@/store/language'
@@ -72,6 +73,7 @@ export default function LessonPage() {
   const t = useTranslations('lesson')
   const tCommon = useTranslations('common')
   const tPlan = useTranslations('plan')
+  const tFlashcards = useTranslations('flashcards')
   const tError = useTranslations('error')
   const tLang = useTranslations('languages')
   const locale = useLocale()
@@ -108,6 +110,7 @@ export default function LessonPage() {
   const [currentExercise, setCurrentExercise] = useState(0)
   const [answer, setAnswer] = useState('')
   const [evaluating, setEvaluating] = useState(false)
+  const [showAnkiExport, setShowAnkiExport] = useState(false)
   const [completed, setCompleted] = useState(false)
   const [dayComplete, setDayComplete] = useState(false)
   const [reviewPromptOpen, setReviewPromptOpen] = useState(false)
@@ -1215,6 +1218,22 @@ export default function LessonPage() {
             wordSaved: tCommon('wordSaved'),
             wordSaveError: tCommon('wordSaveError'),
           }}
+        />
+      )}
+      {/* Fork: export this lesson's vocabulary as an Anki deck */}
+      {lesson?.content?.vocabulary != null && (
+        <button
+          onClick={() => setShowAnkiExport(true)}
+          className="text-fl-label border-fl-border bg-fl-surface text-fl-muted-2 hover:text-fl-fg hover:border-fl-border-2 fixed right-4 bottom-4 z-40 border px-4 py-2 font-mono tracking-widest uppercase transition-colors"
+        >
+          {tFlashcards('exportToAnki')}
+        </button>
+      )}
+      {showAnkiExport && lesson && (
+        <AnkiExportDialog
+          endpoint={`/api/anki/lessons/${lesson.id}`}
+          defaultDeckName={lesson.title}
+          onClose={() => setShowAnkiExport(false)}
         />
       )}
     </>

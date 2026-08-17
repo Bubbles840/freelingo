@@ -239,13 +239,13 @@ async def test_patch_me_conversation_settings(client, test_user) -> None:
 
 @pytest.mark.asyncio
 async def test_patch_me_invalid_conversation_duration(client, test_user) -> None:
-    """PATCH /api/auth/me rejects values not in Literal[900, 1800]."""
+    """PATCH /api/auth/me rejects durations outside the fork's 300-14400s range."""
     _, headers = test_user
 
     response = await client.patch(
         "/api/auth/me",
         headers=headers,
-        json={"conversation_max_duration": 600},
+        json={"conversation_max_duration": 60},
     )
     assert response.status_code == 422
 
@@ -674,3 +674,18 @@ def test_pipeline_initial_context_history_is_used_in_subsequent_turns() -> None:
     assert len(pipeline.history) == 2
     assert pipeline.history[0]["role"] == "user"
     assert pipeline.history[1]["role"] == "assistant"
+
+
+# ─── Fork: markdown stripped from spoken text ───────────────────────────────
+
+
+def test_clean_sentence_strips_markdown_markers():
+    from app.services.conversation_pipeline import ConversationPipeline
+
+    assert (
+        ConversationPipeline._clean_sentence("Dominas **ojalá + subjuntivo** y *espero que*.")
+        == "Dominas ojalá + subjuntivo y espero que."
+    )
+    assert ConversationPipeline._clean_sentence("## Título\nHola") == "Título\nHola"
+    # Underscore blanks used by cloze exercises must survive untouched.
+    assert ConversationPipeline._clean_sentence("Ojalá ___ buen tiempo") == "Ojalá ___ buen tiempo"

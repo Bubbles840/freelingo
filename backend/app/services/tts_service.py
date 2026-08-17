@@ -58,11 +58,35 @@ class OpenAITTSService:
         """Raise if OpenAI TTS is unreachable (lightweight models list call)."""
         await self._client.models.list()
 
+    def _accent_instructions(self, language: str | None) -> str | None:
+        """Fork: steering instructions pinning the voice's accent.
+
+        Only the gpt-* TTS models accept the `instructions` field (tts-1
+        rejects it); without it the voice drifts into American English on
+        cognates, names, or after an English aside.
+        """
+        if not language or not self.model.startswith("gpt-"):
+            return None
+        from app.services.language_helpers import (  # noqa: PLC0415
+            get_english_name_from_iso,
+        )
+
+        name = get_english_name_from_iso(language)
+        if not name or name == "English":
+            return None
+        return (
+            f"You are a warm native {name} language tutor. Read all {name} "
+            f"text with a natural native {name} accent, including names and "
+            f"cognates — never pronounce {name} words with an American or "
+            "English accent. If a short explanation in another language "
+            f"appears, say it clearly, then return to the native {name} "
+            "accent immediately."
+        )
+
     async def synthesize(
         self, text: str, voice: str | None = None, language: str | None = None
     ) -> bytes:
         """Call OpenAI TTS API and return MP3 audio bytes."""
-        _ = language
         text = text.strip()
         if not text:
             logger.warning("[tts-openai] Empty text received for synthesis")
@@ -86,6 +110,9 @@ class OpenAITTSService:
         }
         if self.timeout is not None:
             request_payload["timeout"] = self.timeout
+        instructions = self._accent_instructions(language)
+        if instructions:
+            request_payload["instructions"] = instructions
 
         response = await self._client.audio.speech.create(**request_payload)
         audio = response.content

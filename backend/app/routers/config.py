@@ -47,6 +47,7 @@ async def get_config(
         "stripe_trial_days": settings.STRIPE_TRIAL_DAYS,
         "freemium_trial_enabled": settings.FREEMIUM_TRIAL_ENABLED,
         "tts_provider": settings.TTS_PROVIDER,
+        "pronunciation_available": settings.PRONUNCIATION_PROVIDER != "none",
         "openai_tts_voice": settings.OPENAI_TTS_VOICE,
         "maintenance_mode": maintenance_mode,
         "price_monthly": settings.PRICE_MONTHLY,

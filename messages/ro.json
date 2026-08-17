@@ -115,7 +115,8 @@
     "contact": "Contact",
     "feedback": "Feedback",
     "reviews": "Recenzii",
-    "switchLanguage": "Schimbă limba"
+    "switchLanguage": "Schimbă limba",
+    "learnWithLingu": "Învață cu Lingu"
   },
   "auth": {
     "login": {
@@ -317,7 +318,9 @@
     "reviewDeleteMessage": "Vrei să ștergi recenzia ta? Această acțiune nu poate fi anulată.",
     "reviewDeleteConfirm": "Șterge",
     "reviewDeleted": "Recenzie ștearsă.",
-    "reviewDeleteError": "Nu am putut șterge recenzia. Încearcă din nou."
+    "reviewDeleteError": "Nu am putut șterge recenzia. Încearcă din nou.",
+    "quotaEditLimits": "Editează limitele",
+    "quotaCancel": "Anulează"
   },
   "legal": {
     "terms": {
@@ -608,10 +611,18 @@
     "resume": "Reia",
     "lessonsHeader": "Lecții · {count}",
     "reviewLesson": "Revizuiește",
+    "practiceWithLingu": "Exersează cu Lingu",
+    "useInScenario": "Folosește-o într-o scenă",
     "noPlanLabel": "ÎNCEPE",
     "noPlanTitle": "Creează-ți planul de studiu",
     "noPlanDesc": "Fă o evaluare rapidă pentru a-ți descoperi nivelul și a obține un plan de învățare personalizat.",
-    "noPlanHint": "Durează aproximativ 10 minute"
+    "noPlanHint": "Durează aproximativ 10 minute",
+    "learnTitle": "Învață cu Lingu",
+    "learnSubtitle": "Lecții vocale",
+    "learnToday": "Astăzi",
+    "learnCatchUp": "De recuperat",
+    "learnNone": "Nicio lecție pregătită — vezi Planul meu.",
+    "preparingToday": "Se pregătește lecția de azi…"
   },
   "lesson": {
     "loading": "Se încarcă lecția...",
@@ -700,7 +711,20 @@
     "tapToHide": "atinge pentru a ascunde",
     "tapToReveal": "atinge pentru a dezvălui",
     "interval": "Interval",
-    "repetitions": "Rep"
+    "repetitions": "Rep",
+    "exportToAnki": "Exportă în Anki",
+    "ankiDeckName": "Numele pachetului",
+    "ankiCardType": "Tip de card",
+    "ankiTypeBasic": "De bază (cuvânt → traducere)",
+    "ankiTypeReversed": "De bază + inversat (ambele direcții)",
+    "ankiTypeCloze": "Lacune (completează exemplul)",
+    "ankiIncludeDefinition": "Include definiția",
+    "ankiIncludeExample": "Include propoziția exemplu",
+    "ankiAiExpand": "Extinde cu AI (conjugări, exemple)",
+    "ankiAiExpandHint": "Mai lent — AI extinde fiecare card înainte de export.",
+    "ankiExport": "Exportă",
+    "ankiCancel": "Anulează",
+    "ankiExportFailed": "Exportul a eșuat — încearcă din nou."
   },
   "chat": {
     "title": "Tutore AI",
@@ -1109,6 +1133,7 @@
     "errorUnauthorized": "Sesiune expirată. Reîmprospătează pagina.",
     "errorMic": "Accesul la microfon a fost refuzat.",
     "errorVadInit": "Inițializarea detectării vocii a eșuat. Verifică dacă browserul tău suportă WebAssembly.",
+    "errorLessonNotFound": "Această lecție nu este disponibilă. Deschide-o din nou din planul tău.",
     "warningTimeout": "Sesiunea se va încheia în {seconds}s",
     "sessionEnded": "Sesiune încheiată",
     "tapToStart": "Vorbește când ești gata",
@@ -1159,7 +1184,32 @@
       "Planuri de weekend",
       "Muncă și obiective de carieră",
       "Munca de acasă"
-    ]
+    ],
+    "micModeLabel": "Mod microfon",
+    "micAuto": "Automat",
+    "micManual": "Atinge pentru a vorbi",
+    "micWaitLabel": "Așteptare",
+    "micWaitDefault": "Implicit",
+    "micWaitSeconds": "{seconds}s",
+    "tapToTalk": "Atinge pentru a vorbi",
+    "tapToSend": "Atinge pentru a trimite",
+    "pronunciationScore": "Pronunție {score}/100",
+    "pronunciationWeakWords": "De exersat: {words}",
+    "lessonStepProgress": "Pasul {current} din {total}",
+    "lessonNextSection": "Secțiunea următoare →",
+    "lessonShow": "Arată lecția",
+    "lessonHide": "Ascunde lecția",
+    "lessonCompleted": "Lecție finalizată!",
+    "lessonCompletionError": "Finalizarea lecției nu a putut fi salvată.",
+    "lessonRetry": "Încearcă din nou",
+    "translate": "Traduce",
+    "hideTranslation": "Ascunde traducerea",
+    "translationFailed": "Traducerea a eșuat",
+    "addToFlashcards": "Adaugă la carduri",
+    "flashcardAdded": "Adăugat",
+    "dismissSuggestion": "Renunță",
+    "pronunciationOn": "Pronunție: da",
+    "pronunciationOff": "Pronunție: nu"
   },
   "voiceRecorder": {
     "record": "Înregistrează",

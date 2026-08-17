@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     STT_PROVIDER: str = "local"  # local | openai
     STT_BASE_URL: str = "http://whisper:9000"
     OPENAI_STT_MODEL: str = "whisper-1"
+    PRONUNCIATION_PROVIDER: str = "none"  # none | azure
+    AZURE_SPEECH_KEY: str = ""
+    AZURE_SPEECH_REGION: str = ""
     RATE_LIMIT_ENABLED: bool = True
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
     COOKIE_SECURE: bool = False

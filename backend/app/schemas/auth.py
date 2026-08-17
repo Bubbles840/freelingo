@@ -185,6 +185,12 @@ class UserUpdateRequest(BaseModel):
     ui_locale: str | None = Field(default=None, min_length=2, max_length=5)
     conversation_max_duration: int | None = None
     conversation_inactivity_timeout: int | None = None
+    # Fork: self-serve usage limits (0 = unlimited). Applied only when the
+    # paywall is off or the user is an admin — see update_me.
+    conversation_weekly_sessions: int | None = Field(default=None, ge=0, le=100000)
+    conversation_daily_minutes: int | None = Field(default=None, ge=0, le=100000)
+    conversation_weekly_minutes: int | None = Field(default=None, ge=0, le=1000000)
+    monthly_tokens_limit: int | None = Field(default=None, ge=0, le=1000000000)
     bio: str | None = Field(default=None, max_length=500)
     learning_goals: list[str] | None = None
 
@@ -228,8 +234,12 @@ class UserUpdateRequest(BaseModel):
     @field_validator("conversation_max_duration")
     @classmethod
     def validate_max_duration(cls, v: int | None) -> int | None:
-        if v is not None and v not in (900, 1800):
-            raise ValueError("conversation_max_duration must be 900 or 1800")
+        # Fork: any 5–240 minute session, not just the two upstream presets —
+        # this is a self-hosted install, the learner sets their own limits.
+        if v is not None and not (300 <= v <= 14400):
+            raise ValueError(
+                "conversation_max_duration must be between 300 and 14400 seconds"
+            )
         return v
 
     @field_validator("conversation_inactivity_timeout")

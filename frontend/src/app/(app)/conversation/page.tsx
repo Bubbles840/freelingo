@@ -62,6 +62,10 @@ export default function ConversationPage() {
     ChatContextItem[] | undefined
   >(undefined)
   const [autoStart, setAutoStart] = useState(false)
+  const [lessonId, setLessonId] = useState<number | null>(null)
+  const [lessonMode, setLessonMode] = useState<'guided' | 'roleplay'>(
+    'guided'
+  )
   const [cefrLevel, setCefrLevel] = useState<string | null>(null)
   const [planReady, setPlanReady] = useState(false)
   const [voiceTrial, setVoiceTrial] = useState<{
@@ -95,6 +99,27 @@ export default function ConversationPage() {
           setAutoStart(true)
         } else if (Array.isArray(parsed)) {
           setInitialContext(parsed as ChatContextItem[])
+          setAutoStart(true)
+        }
+      } catch {
+        // malformed — ignore
+      }
+    }
+    const lessonRaw = sessionStorage.getItem('voice_lesson')
+    if (lessonRaw) {
+      sessionStorage.removeItem('voice_lesson')
+      try {
+        const parsed = JSON.parse(lessonRaw) as {
+          lessonId?: unknown
+          mode?: unknown
+        }
+        if (
+          typeof parsed.lessonId === 'number' &&
+          Number.isFinite(parsed.lessonId) &&
+          parsed.lessonId > 0
+        ) {
+          setLessonId(parsed.lessonId)
+          setLessonMode(parsed.mode === 'roleplay' ? 'roleplay' : 'guided')
           setAutoStart(true)
         }
       } catch {
@@ -177,6 +202,8 @@ export default function ConversationPage() {
           autoStart={autoStart}
           cefrLevel={cefrLevel}
           targetLanguage={activeLanguage?.code}
+          lessonId={lessonId ?? undefined}
+          lessonMode={lessonId != null ? lessonMode : undefined}
           freemiumVoiceRemaining={
             showFreemiumVoicePill ? freemiumVoiceRemaining : undefined
           }

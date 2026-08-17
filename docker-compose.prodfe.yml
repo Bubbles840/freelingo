@@ -1,0 +1,55 @@
+# Fork: local PRODUCTION-build frontend for voice testing.
+#
+# Why this exists: both Next 16 dev bundlers break the voice stack in dev —
+# Turbopack can't resolve its internal next/font module, and webpack rewrites
+# onnxruntime-web's import.meta.url to a file:/// URL, killing MicVAD. The
+# production build has neither problem (it's what the home server runs).
+#
+# This overlay runs the prod image plus a mini-Caddy that mirrors the server
+# topology (Next rewrites don't proxy WebSockets in prod, so /ws/* must be
+# fronted — same reason the server runs Caddy). It ATTACHES to the running
+# dev stack's network and reuses its backend/postgres/redis.
+#
+# Usage (dev stack must already be up via ./run-dev.sh):
+#   docker build -f frontend/Dockerfile -t freelingo-frontend:prod-local .
+#   docker compose -f docker-compose.prodfe.yml -p freelingo-prodfe up -d
+# Then test voice at http://localhost:3003 (hot-reload dev stays on :3000).
+#
+# Rebuild after frontend changes:
+#   docker build -f frontend/Dockerfile -t freelingo-frontend:prod-local . \
+#     && docker compose -f docker-compose.prodfe.yml -p freelingo-prodfe up -d --force-recreate frontend-prod
+
+services:
+  frontend-prod:
+    image: freelingo-frontend:prod-local
+    container_name: freelingo-frontend-prod
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:8000
+    networks:
+      - freelingo_default
+
+  proxy-prod:
+    image: caddy:2-alpine
+    container_name: freelingo-proxy-prod
+    restart: unless-stopped
+    ports:
+      - '3003:80'
+    depends_on:
+      - frontend-prod
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        caddy run --config - --adapter caddyfile <<'EOF'
+        :80 {
+            reverse_proxy /api/* backend:8000
+            reverse_proxy /ws/* backend:8000
+            reverse_proxy frontend-prod:3000
+        }
+        EOF
+    networks:
+      - freelingo_default
+
+networks:
+  freelingo_default:
+    external: true

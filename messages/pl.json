@@ -115,7 +115,8 @@
     "contact": "Kontakt",
     "feedback": "Feedback",
     "reviews": "Recenzje",
-    "switchLanguage": "Zmień język"
+    "switchLanguage": "Zmień język",
+    "learnWithLingu": "Ucz się z Lingu"
   },
   "auth": {
     "login": {
@@ -317,7 +318,9 @@
     "reviewDeleteMessage": "Czy chcesz usunąć swoją recenzję? Tej czynności nie można cofnąć.",
     "reviewDeleteConfirm": "Usuń",
     "reviewDeleted": "Recenzja usunięta.",
-    "reviewDeleteError": "Nie udało się usunąć recenzji. Spróbuj ponownie."
+    "reviewDeleteError": "Nie udało się usunąć recenzji. Spróbuj ponownie.",
+    "quotaEditLimits": "Edytuj limity",
+    "quotaCancel": "Anuluj"
   },
   "legal": {
     "terms": {
@@ -608,10 +611,18 @@
     "resume": "Wznów",
     "lessonsHeader": "Lekcje · {count}",
     "reviewLesson": "Przejrzyj",
+    "practiceWithLingu": "Ćwicz z Lingu",
+    "useInScenario": "Użyj w scence",
     "noPlanLabel": "ZACZNIJ",
     "noPlanTitle": "Stwórz plan nauki",
     "noPlanDesc": "Wykonaj szybką ocenę, aby poznać swój poziom i otrzymać spersonalizowaną ścieżkę nauki.",
-    "noPlanHint": "Zajmuje około 10 minut"
+    "noPlanHint": "Zajmuje około 10 minut",
+    "learnTitle": "Ucz się z Lingu",
+    "learnSubtitle": "Lekcje głosowe",
+    "learnToday": "Dzisiaj",
+    "learnCatchUp": "Do nadrobienia",
+    "learnNone": "Brak gotowych lekcji — zobacz Mój plan.",
+    "preparingToday": "Przygotowywanie dzisiejszej lekcji…"
   },
   "lesson": {
     "loading": "Ładowanie lekcji...",
@@ -700,7 +711,20 @@
     "tapToHide": "dotknij aby ukryć",
     "tapToReveal": "dotknij aby pokazać",
     "interval": "Interwał",
-    "repetitions": "Powt"
+    "repetitions": "Powt",
+    "exportToAnki": "Eksportuj do Anki",
+    "ankiDeckName": "Nazwa talii",
+    "ankiCardType": "Typ karty",
+    "ankiTypeBasic": "Podstawowa (słowo → tłumaczenie)",
+    "ankiTypeReversed": "Podstawowa + odwrotna (oba kierunki)",
+    "ankiTypeCloze": "Luki (uzupełnij przykład)",
+    "ankiIncludeDefinition": "Dołącz definicję",
+    "ankiIncludeExample": "Dołącz zdanie przykładowe",
+    "ankiAiExpand": "Rozszerz przez AI (odmiany, przykłady)",
+    "ankiAiExpandHint": "Wolniej — AI rozszerza każdą kartę przed eksportem.",
+    "ankiExport": "Eksportuj",
+    "ankiCancel": "Anuluj",
+    "ankiExportFailed": "Eksport nie powiódł się — spróbuj ponownie."
   },
   "chat": {
     "title": "Korepetytor AI",
@@ -1109,6 +1133,7 @@
     "errorUnauthorized": "Sesja wygasła. Odśwież stronę.",
     "errorMic": "Odmówiono dostępu do mikrofonu.",
     "errorVadInit": "Nie udało się zainicjować rozpoznawania mowy. Upewnij się, że Twoja przeglądarka obsługuje WebAssembly.",
+    "errorLessonNotFound": "Ta lekcja jest niedostępna. Otwórz ją ponownie z planu.",
     "warningTimeout": "Sesja kończy się za {seconds}s",
     "sessionEnded": "Sesja zakończona",
     "tapToStart": "Mów kiedy gotowy(-a)",
@@ -1159,7 +1184,32 @@
       "Plany na weekend",
       "Praca i cele zawodowe",
       "Praca zdalna"
-    ]
+    ],
+    "micModeLabel": "Tryb mikrofonu",
+    "micAuto": "Automatyczny",
+    "micManual": "Naciśnij, aby mówić",
+    "micWaitLabel": "Oczekiwanie",
+    "micWaitDefault": "Domyślnie",
+    "micWaitSeconds": "{seconds}s",
+    "tapToTalk": "Naciśnij, aby mówić",
+    "tapToSend": "Naciśnij, aby wysłać",
+    "pronunciationScore": "Wymowa {score}/100",
+    "pronunciationWeakWords": "Do poprawy: {words}",
+    "lessonStepProgress": "Krok {current} z {total}",
+    "lessonNextSection": "Następna sekcja →",
+    "lessonShow": "Pokaż lekcję",
+    "lessonHide": "Ukryj lekcję",
+    "lessonCompleted": "Lekcja ukończona!",
+    "lessonCompletionError": "Nie udało się zapisać ukończenia lekcji.",
+    "lessonRetry": "Spróbuj ponownie",
+    "translate": "Przetłumacz",
+    "hideTranslation": "Ukryj tłumaczenie",
+    "translationFailed": "Nie udało się przetłumaczyć",
+    "addToFlashcards": "Dodaj do fiszek",
+    "flashcardAdded": "Dodano",
+    "dismissSuggestion": "Odrzuć",
+    "pronunciationOn": "Wymowa: wł.",
+    "pronunciationOff": "Wymowa: wył."
   },
   "voiceRecorder": {
     "record": "Nagraj",

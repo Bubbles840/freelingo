@@ -1,6 +1,8 @@
 #!/bin/bash
 # Sensible vars read from macOS Keychain — never touch disk
 export OPENAI_API_KEY=$(security find-generic-password -a openai -s freelingo -w 2>/dev/null)
+# Fork: DeepSeek key (optional — only needed when LLM_PROVIDER=deepseek)
+export DEEPSEEK_API_KEY=$(security find-generic-password -a deepseek -s freelingo -w 2>/dev/null)
 export POSTGRES_PASSWORD=$(security find-generic-password -a postgres -s freelingo -w 2>/dev/null)
 export REDIS_PASSWORD=$(security find-generic-password -a redis -s freelingo -w 2>/dev/null)
 export SECRET_KEY=$(security find-generic-password -a secretkey -s freelingo -w 2>/dev/null)

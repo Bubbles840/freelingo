@@ -1,3 +1,4 @@
+import path from 'path'
 import createNextIntlPlugin from 'next-intl/plugin'
 import type { NextConfig } from 'next'
 
@@ -18,6 +19,23 @@ const nextConfig: NextConfig = {
         '@ricky0123/vad-web',
         'onnxruntime-web',
       ]
+    }
+    if (!isServer) {
+      // Fork (webpack dev): vad-web `require()`s onnxruntime-web, landing on
+      // its CJS build, whose dynamic import of the runtime loader webpack
+      // rewrites to a file:/// URL that browsers refuse (Security Error) —
+      // MicVAD then dies with a null processor adapter. The self-contained
+      // bundle variant embeds that loader so nothing is dynamically
+      // imported; the .wasm binaries still load from /vad/ via
+      // onnxWASMBasePath. Alias must be an absolute file path because the
+      // package's `exports` map does not expose dist/ subpaths.
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'onnxruntime-web$': path.join(
+          process.cwd(),
+          'node_modules/onnxruntime-web/dist/ort.wasm.bundle.min.mjs'
+        ),
+      }
     }
     return config
   },

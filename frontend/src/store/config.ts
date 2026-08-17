@@ -13,6 +13,7 @@ export interface DashboardBanner {
 
 interface ConfigStore {
   stripeEnabled: boolean
+  pronunciationAvailable: boolean
   stripeTrialDays: number
   freemiumTrialEnabled: boolean
   ttsProvider: string
@@ -29,6 +30,7 @@ interface ConfigStore {
 
 export const useConfigStore = create<ConfigStore>((set, get) => ({
   stripeEnabled: false,
+  pronunciationAvailable: false,
   stripeTrialDays: 7,
   freemiumTrialEnabled: true,
   ttsProvider: 'local',
@@ -48,6 +50,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       const data = await res.json()
       set({
         stripeEnabled: data.stripe_enabled ?? false,
+        pronunciationAvailable: data.pronunciation_available ?? false,
         stripeTrialDays: data.stripe_trial_days ?? 7,
         freemiumTrialEnabled: data.freemium_trial_enabled ?? true,
         ttsProvider: data.tts_provider ?? 'local',

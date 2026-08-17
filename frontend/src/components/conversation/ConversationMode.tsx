@@ -15,11 +15,22 @@ import {
   buildConversationWsUrl,
   type WsMessage,
   type ChatContextItem,
+  type LessonStateMessage,
 } from '@/lib/conversation-ws'
+import {
+  loadMicSettings,
+  saveMicSettings,
+  type MicSettings,
+} from '@/lib/mic-settings'
+import { UtteranceAggregator, concatFloat32 } from '@/lib/utterance-aggregator'
 import StatusIndicator, { type ConvStatus } from './StatusIndicator'
-import TranscriptBubble from './TranscriptBubble'
+import TranscriptBubble, { type PronunciationInfo } from './TranscriptBubble'
 import SessionTimeoutBanner from './SessionTimeoutBanner'
 import MicButton from './MicButton'
+import MicModeControl from './MicModeControl'
+import { WordTooltip, useWordSave } from '@/components/ui/WordTooltip'
+import LessonPanel from './LessonPanel'
+import { useLessonCompletion } from '@/hooks/useLessonCompletion'
 import { type QuotaStatus } from '@/types/api'
 import {
   ReviewPrompt,
@@ -33,6 +44,7 @@ interface TranscriptEntry {
   id: number
   role: 'user' | 'assistant'
   text: string
+  turnId?: number
 }
 
 function QuotaBar({
@@ -258,9 +270,37 @@ const INTERRUPTION_MIN_UTTERANCE_MS = 1200
 const INTERRUPTION_RMS_THRESHOLD = 0.03
 const BARGE_IN_STARTUP_GUARD_MS = 900
 const VAD_MAX_RMS = 0.25
+// Fork (mic controls): manual recordings are capped so a forgotten open mic
+// can't grow past the backend's WS frame size / STT request timeout.
+const MANUAL_RECORDING_SAMPLE_RATE_HZ = 16000
+const MAX_MANUAL_RECORDING_MS = 90_000
+const MAX_MANUAL_RECORDING_SAMPLES =
+  (MAX_MANUAL_RECORDING_MS / 1000) * MANUAL_RECORDING_SAMPLE_RATE_HZ
 const convLogger = ENABLE_CONVERSATION_AUDIO_DEBUG_LOGS
   ? getLogger('conversation-audio')
   : silentLogger
+
+// Fork (guided lessons): panel visibility persists across sessions.
+const LESSON_PANEL_VISIBLE_KEY = 'fl_lesson_panel'
+
+function loadLessonPanelVisible(): boolean {
+  if (typeof window === 'undefined') return true
+  try {
+    return localStorage.getItem(LESSON_PANEL_VISIBLE_KEY) !== '0'
+  } catch {
+    // Storage access can throw (blocked cookies, enterprise policy, etc).
+    return true
+  }
+}
+
+function saveLessonPanelVisible(visible: boolean): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(LESSON_PANEL_VISIBLE_KEY, visible ? '1' : '0')
+  } catch {
+    // Non-fatal: the setting simply won't persist across reloads.
+  }
+}
 
 export default function ConversationMode({
   initialContext,
@@ -272,6 +312,10 @@ export default function ConversationMode({
   trialMode,
   freemiumVoiceRemaining,
   freemiumVoiceLimit,
+  lessonId,
+  lessonMode,
+  pageTitle,
+  pageSubtitle,
   onClose,
 }: {
   initialContext?: ChatContextItem[]
@@ -283,6 +327,11 @@ export default function ConversationMode({
   trialMode?: boolean
   freemiumVoiceRemaining?: number
   freemiumVoiceLimit?: number
+  lessonId?: number
+  lessonMode?: 'guided' | 'roleplay'
+  /** Fork: hosting pages (Learn with Lingu) override the page heading */
+  pageTitle?: string
+  pageSubtitle?: string
   onClose?: () => void
 }) {
   const t = useTranslations('conversation')
@@ -295,11 +344,19 @@ export default function ConversationMode({
   const [status, setStatus] = useState<ConvStatus>('loading')
   const [sessionActive, setSessionActive] = useState(false)
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([])
+  const [pronunciations, setPronunciations] = useState<
+    Record<number, PronunciationInfo>
+  >({})
   const [streamingText, setStreamingText] = useState<string | null>(null)
   const [warningSeconds, setWarningSeconds] = useState<number | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [userSpeaking, setUserSpeaking] = useState(false)
   const [assistantSpeaking, setAssistantSpeaking] = useState(false)
+  // Render-visible mirror of assistantTurnActiveRef (fork: mic controls).
+  // Set/cleared at every site that sets the ref, so the two can never
+  // disagree. Used only to drive UI (push-to-talk disabled state); the ref
+  // remains the authoritative check in toggleManualRecording/onSpeechEnd.
+  const [assistantTurnActive, setAssistantTurnActive] = useState(false)
   const {
     visible: memoryToast,
     announcementId: memoryToastId,
@@ -307,6 +364,174 @@ export default function ConversationMode({
   } = useTransientToast()
   const [quota, setQuota] = useState<QuotaStatus | null>(null)
   const [reviewPromptOpen, setReviewPromptOpen] = useState(false)
+
+  // ─── Lesson mode (fork: guided lessons) ──────────────────────────────────
+  const tLesson = useTranslations('lesson')
+  const [lessonState, setLessonState] = useState<LessonStateMessage | null>(
+    null
+  )
+  const [lessonPanelVisible, setLessonPanelVisible] = useState<boolean>(() =>
+    loadLessonPanelVisible()
+  )
+  // Completion write-back (POST /api/lessons/{id}/complete → progress
+  // store), with a re-entrancy guard so a duplicate `lesson_completed` WS
+  // frame can never double-post, and a failure/retry path so a failed POST
+  // doesn't silently lose the learner's XP forever. See useLessonCompletion
+  // for the guard semantics (latches on success, releases on failure).
+  const {
+    status: lessonCompletionStatus,
+    complete: completeLessonWriteBack,
+    retry: retryLessonCompletion,
+    reset: resetLessonCompletion,
+  } = useLessonCompletion()
+
+  const toggleLessonPanel = useCallback(() => {
+    setLessonPanelVisible((prev) => {
+      const next = !prev
+      saveLessonPanelVisible(next)
+      return next
+    })
+  }, [])
+
+  const sendLessonAdvance = useCallback(() => {
+    const ws = wsRef.current
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({ type: 'client_event', event: 'lesson_advance' })
+      )
+    }
+  }, [])
+
+  // ─── Mic mode (fork: mic controls) ───────────────────────────────────────
+  const [micSettings, setMicSettings] = useState<MicSettings>(() =>
+    loadMicSettings()
+  )
+  const [manualRecording, setManualRecording] = useState(false)
+  // Fork: learner-controlled pronunciation scoring (saves Azure quota for
+  // the words that matter). Persisted; toggle works mid-session too.
+  const pronunciationAvailable = useConfigStore((s) => s.pronunciationAvailable)
+  const [pronunciationOn, setPronunciationOn] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('fl_pronunciation') !== '0'
+    } catch {
+      return true
+    }
+  })
+  function togglePronunciation() {
+    const next = !pronunciationOn
+    setPronunciationOn(next)
+    try {
+      localStorage.setItem('fl_pronunciation', next ? '1' : '0')
+    } catch {
+      // best effort
+    }
+    const ws = wsRef.current
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({
+          type: 'client_event',
+          event: 'pronunciation_toggle',
+          enabled: next,
+        })
+      )
+    }
+  }
+  // Fork (flashcards): highlight any word in the transcript to save it —
+  // the same word-selection flow the lesson and reading pages use.
+  const {
+    selectedWord,
+    tooltipPos,
+    saveState,
+    handleTextSelection,
+    handleSaveWord,
+    dismissTooltip,
+  } = useWordSave()
+  const micSettingsRef = useRef(micSettings)
+  const manualRecordingRef = useRef(false)
+  const manualFramesRef = useRef<Float32Array[]>([])
+  const manualFramesSampleCountRef = useRef(0)
+  const aggregatorRef = useRef<UtteranceAggregator | null>(null)
+  const keepaliveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    micSettingsRef.current = micSettings
+    aggregatorRef.current?.setWaitMs((micSettings.waitSeconds ?? 0) * 1000)
+  }, [micSettings])
+
+  const stopKeepalive = useCallback(() => {
+    if (keepaliveTimerRef.current !== null) {
+      clearInterval(keepaliveTimerRef.current)
+      keepaliveTimerRef.current = null
+    }
+  }, [])
+
+  const startKeepalive = useCallback(() => {
+    if (keepaliveTimerRef.current !== null) return
+    keepaliveTimerRef.current = setInterval(() => {
+      const ws = wsRef.current
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'client_event', event: 'keepalive' }))
+      }
+    }, 15_000)
+  }, [])
+
+  const sendUtterance = useCallback((audio: Float32Array) => {
+    stopKeepalive()
+    const ws = wsRef.current
+    if (ws && ws.readyState === WebSocket.OPEN && audio.length > 0) {
+      ws.send(float32ToWav(audio, 16000))
+    }
+  }, [stopKeepalive])
+
+  const updateMicSettings = useCallback((next: MicSettings) => {
+    setMicSettings(next)
+    saveMicSettings(next)
+    // Leaving manual mode mid-recording discards the recording.
+    if (next.mode !== 'manual' && manualRecordingRef.current) {
+      manualRecordingRef.current = false
+      manualFramesRef.current = []
+      manualFramesSampleCountRef.current = 0
+      setManualRecording(false)
+      stopKeepalive()
+    }
+    // Switching away from a custom wait flushes anything pending.
+    if (next.mode === 'manual' || next.waitSeconds === null) {
+      aggregatorRef.current?.flushNow()
+    }
+  }, [stopKeepalive])
+
+  const toggleManualRecording = useCallback(() => {
+    if (!sessionActiveRef.current) return
+    // Never interrupt the tutor turn (matches onSpeechEnd's guard): ignore
+    // tap-to-talk while the assistant is generating or speaking so a tap
+    // can't cancel an in-flight turn via backend barge_in.
+    if (assistantTurnActiveRef.current) return
+    if (manualRecordingRef.current) {
+      manualRecordingRef.current = false
+      setManualRecording(false)
+      const audio = concatFloat32(manualFramesRef.current)
+      manualFramesRef.current = []
+      manualFramesSampleCountRef.current = 0
+      sendUtterance(audio)
+    } else {
+      manualFramesRef.current = []
+      manualFramesSampleCountRef.current = 0
+      manualRecordingRef.current = true
+      setManualRecording(true)
+      startKeepalive()
+    }
+  }, [sendUtterance, startKeepalive])
+
+  useEffect(() => {
+    aggregatorRef.current = new UtteranceAggregator(
+      (micSettingsRef.current.waitSeconds ?? 0) * 1000,
+      (audio) => sendUtterance(audio)
+    )
+    return () => {
+      aggregatorRef.current?.cancel()
+      stopKeepalive()
+    }
+  }, [sendUtterance, stopKeepalive])
 
   // 6 random starters picked once per component mount, shown alphabetically
   const visibleStarters = useMemo(
@@ -511,6 +736,17 @@ export default function ConversationMode({
         setAssistantSpeaking(false)
       }
 
+      // Fork (mic controls): manual mode sends via toggleManualRecording;
+      // auto mode with a custom wait aggregates segments first.
+      if (micSettingsRef.current.mode === 'manual') {
+        return
+      }
+      const waitSeconds = micSettingsRef.current.waitSeconds
+      if (waitSeconds !== null) {
+        aggregatorRef.current?.addSegment(audio)
+        startKeepalive()
+        return
+      }
       const ws = wsRef.current
       if (ws && ws.readyState === WebSocket.OPEN) {
         const wav = float32ToWav(audio, 16000)
@@ -519,6 +755,21 @@ export default function ConversationMode({
           assistantSpeaking: assistantSpeakingRef.current,
         })
         ws.send(wav)
+      }
+    },
+    onFrameProcessed: (_probabilities, frame) => {
+      if (!manualRecordingRef.current) return
+      // Don't capture the tutor's own voice: frames processed while TTS
+      // playback is active would otherwise get mixed into the learner's
+      // recording and STT would transcribe both speakers as one utterance.
+      if (assistantSpeakingRef.current) return
+      // Copy: the VAD reuses its frame buffer.
+      manualFramesRef.current.push(frame.slice())
+      manualFramesSampleCountRef.current += frame.length
+      if (manualFramesSampleCountRef.current >= MAX_MANUAL_RECORDING_SAMPLES) {
+        // Cap reached: auto-stop and send what was captured via the same
+        // path as a manual tap, so the learner never silently loses audio.
+        toggleManualRecording()
       }
     },
   })
@@ -558,8 +809,15 @@ export default function ConversationMode({
     (reason: 'manual' | 'route_unload' | 'unknown' = 'unknown') => {
       closeReasonRef.current = reason
       if (!mountedRef.current) return
+      aggregatorRef.current?.cancel()
+      stopKeepalive()
+      manualRecordingRef.current = false
+      manualFramesRef.current = []
+      manualFramesSampleCountRef.current = 0
+      setManualRecording(false)
       activeTurnIdRef.current = null
       assistantTurnActiveRef.current = false
+      setAssistantTurnActive(false)
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send(
           JSON.stringify({
@@ -583,7 +841,7 @@ export default function ConversationMode({
       }
       setSessionActive(false)
     },
-    [vad]
+    [vad, stopKeepalive]
   )
 
   // Auto-scroll transcript to bottom
@@ -625,6 +883,11 @@ export default function ConversationMode({
       wsRef.current = ws
 
       ws.onopen = () => {
+        // Fork (mic controls): drop any speech buffered by the aggregator
+        // while the connection was still warming/connecting. Flushing it
+        // now would send a stale pre-connection phrase as a fresh utterance
+        // and could cancel the tutor's greeting via backend barge-in.
+        aggregatorRef.current?.cancel()
         const authPayload: Record<string, unknown> = { type: 'auth', token }
         const storedVoice =
           typeof window !== 'undefined'
@@ -634,6 +897,11 @@ export default function ConversationMode({
         if (context?.length) authPayload.context = context
         if (targetLanguage) authPayload.target_language = targetLanguage
         if (voiceTrialToken) authPayload.voice_trial_token = voiceTrialToken
+        authPayload.pronunciation_enabled = pronunciationOn
+        if (lessonId) {
+          authPayload.lesson_id = lessonId
+          authPayload.lesson_mode = lessonMode ?? 'guided'
+        }
         ws.send(JSON.stringify(authPayload))
         sessionStartedAtRef.current = Date.now()
         convLogger.info('ws auth sent', {
@@ -651,6 +919,7 @@ export default function ConversationMode({
         })
         lastAssistantAudioAtRef.current = performance.now()
         assistantTurnActiveRef.current = true
+        setAssistantTurnActive(true)
         if (!audioQueueRef.current) {
           convLogger.warn('audio queue missing for playback')
           setAssistantSpeaking(false)
@@ -698,10 +967,12 @@ export default function ConversationMode({
                     id: transcriptIdRef.current++,
                     role: 'user',
                     text: msg.text,
+                    turnId: msg.turn_id,
                   },
                 ])
               } else {
                 assistantTurnActiveRef.current = true
+                setAssistantTurnActive(true)
                 // LLM token stream
                 if (msg.final) {
                   setStreamingText(null)
@@ -721,6 +992,7 @@ export default function ConversationMode({
 
             case 'turn_complete':
               assistantTurnActiveRef.current = false
+              setAssistantTurnActive(false)
               break
 
             case 'barge_in':
@@ -746,14 +1018,17 @@ export default function ConversationMode({
                 setAssistantSpeaking(true)
               } else if (msg.value === 'thinking') {
                 assistantTurnActiveRef.current = true
+                setAssistantTurnActive(true)
               } else if (msg.value === 'listening') {
                 assistantTurnActiveRef.current = false
+                setAssistantTurnActive(false)
               }
               break
 
             case 'session_end':
               cleanEndRef.current = true
               assistantTurnActiveRef.current = false
+              setAssistantTurnActive(false)
               finalizeSession()
               convLogger.info('session end received', { reason: msg.reason })
               setStatus('ended')
@@ -766,6 +1041,12 @@ export default function ConversationMode({
                 message: msg.message,
               })
               cleanEndRef.current = true
+              aggregatorRef.current?.cancel()
+              stopKeepalive()
+              manualRecordingRef.current = false
+              manualFramesRef.current = []
+              manualFramesSampleCountRef.current = 0
+              setManualRecording(false)
               setErrorMsg(
                 msg.code === 'services_disabled'
                   ? t('errorServicesDisabled')
@@ -777,15 +1058,40 @@ export default function ConversationMode({
                         ? t('quotaExceededTokens')
                         : msg.code === 'no_active_plan'
                           ? tCommon('noActivePlan')
-                          : (msg.message ?? t('errorConnection'))
+                          : msg.code === 'lesson_not_found'
+                            ? t('errorLessonNotFound')
+                            : (msg.message ?? t('errorConnection'))
               )
               setStatus('error')
               assistantTurnActiveRef.current = false
+              setAssistantTurnActive(false)
               ws.close()
               break
 
             case 'memory_updated':
               showMemoryToast()
+              break
+
+            case 'pronunciation':
+              if (msg.turn_id !== undefined) {
+                const turnId = msg.turn_id
+                setPronunciations((prev) => ({
+                  ...prev,
+                  [turnId]: {
+                    overall: msg.overall,
+                    fluency: msg.fluency,
+                    words: msg.words,
+                  },
+                }))
+              }
+              break
+
+            case 'lesson_state':
+              setLessonState(msg)
+              break
+
+            case 'lesson_completed':
+              void completeLessonWriteBack(msg.lesson_id)
               break
           }
         } catch {
@@ -824,9 +1130,13 @@ export default function ConversationMode({
       targetLanguage,
       voiceTrialToken,
       trialMode,
+      lessonId,
+      lessonMode,
       refreshCurrentUser,
       finalizeSession,
+      stopKeepalive,
       showMemoryToast,
+      completeLessonWriteBack,
     ]
   )
 
@@ -864,6 +1174,9 @@ export default function ConversationMode({
     setSessionActive(true)
     setAssistantSpeaking(false)
     setTranscript([])
+    setLessonState(null)
+    resetLessonCompletion()
+    setPronunciations({})
     setStreamingText(null)
     setWarningSeconds(null)
     setErrorMsg(null)
@@ -871,6 +1184,7 @@ export default function ConversationMode({
     setAssistantSpeaking(false)
     activeTurnIdRef.current = null
     assistantTurnActiveRef.current = false
+    setAssistantTurnActive(false)
     sessionStartedAtRef.current = null
     refreshQuota()
 
@@ -1008,15 +1322,19 @@ export default function ConversationMode({
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="mx-auto flex h-full max-w-4xl flex-col overflow-hidden p-4 md:p-6">
+    <div
+      className={`mx-auto flex h-full w-full flex-col overflow-hidden p-4 md:p-6 ${
+        lessonState ? 'max-w-7xl' : 'max-w-4xl'
+      }`}
+    >
       {/* Header */}
       <div className="border-fl-border mb-6 flex items-end justify-between border-b pb-4">
         <div>
           <p className="text-fl-label text-fl-muted-2 mb-1 font-mono tracking-widest uppercase">
-            {t('subtitle')}
+            {pageSubtitle ?? t('subtitle')}
           </p>
           <h1 className="text-fl-fg font-mono text-2xl font-bold tracking-tight">
-            {t('title')}
+            {pageTitle ?? t('title')}
           </h1>
         </div>
         {onClose && (
@@ -1028,6 +1346,42 @@ export default function ConversationMode({
           </button>
         )}
       </div>
+
+      {/* Fork: two-column on desktop — lesson panel right, conversation left */}
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row lg:gap-6">
+      {lessonState && (
+        <div className="mb-4 lg:order-2 lg:mb-0 lg:flex lg:min-h-0 lg:w-96 lg:shrink-0 lg:flex-col">
+          <LessonPanel
+            title={lessonState.title ?? tLesson('label')}
+            steps={lessonState.steps}
+            stepIndex={lessonState.step_index}
+            total={lessonState.total}
+            visible={lessonPanelVisible}
+            onToggle={toggleLessonPanel}
+            onAdvance={sendLessonAdvance}
+          />
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden lg:order-1">
+      {lessonCompletionStatus === 'completed' && (
+        <div className="border-fl-border bg-fl-surface text-fl-accent mb-4 border px-4 py-3 text-center font-mono text-xs font-bold tracking-widest uppercase">
+          ✓ {t('lessonCompleted')}
+        </div>
+      )}
+
+      {lessonCompletionStatus === 'error' && (
+        <div className="border-fl-error/40 bg-fl-surface text-fl-error mb-4 flex flex-col items-center gap-2 border px-4 py-3 text-center font-mono text-xs tracking-widest uppercase">
+          <span>✕ {t('lessonCompletionError')}</span>
+          <button
+            type="button"
+            onClick={() => void retryLessonCompletion()}
+            className="border-fl-error/40 text-fl-error hover:bg-fl-error/10 border px-4 py-1.5 font-mono text-xs font-bold tracking-widest uppercase transition-colors"
+          >
+            {t('lessonRetry')}
+          </button>
+        </div>
+      )}
 
       {trialMode && (
         <div className="border-fl-accent/40 bg-fl-surface text-fl-muted-1 mb-4 border px-4 py-3 text-center font-mono text-xs tracking-widest uppercase">
@@ -1053,6 +1407,9 @@ export default function ConversationMode({
           )
           return transcript.map((entry, i) => (
             <TranscriptBubble
+              onTextSelected={(bubbleText) =>
+                handleTextSelection(bubbleText, cefrLevel ?? 'B1')
+              }
               key={entry.id}
               role={entry.role}
               text={entry.text}
@@ -1062,11 +1419,19 @@ export default function ConversationMode({
               userAvatar={user?.avatar}
               userInitial={(user?.displayName || user?.username || '?')[0]}
               languageCode={targetLanguage}
+              pronunciation={
+                entry.turnId !== undefined
+                  ? pronunciations[entry.turnId]
+                  : undefined
+              }
             />
           ))
         })()}
         {streamingText !== null && (
           <TranscriptBubble
+              onTextSelected={(bubbleText) =>
+                handleTextSelection(bubbleText, cefrLevel ?? 'B1')
+              }
             role="assistant"
             text={streamingText}
             streaming
@@ -1147,15 +1512,67 @@ export default function ConversationMode({
           userSpeaking={userSpeaking}
           assistantSpeaking={assistantSpeaking}
         />
-        {!(trialMode && status === 'ended') && (
-          <MicButton
-            status={status}
-            sessionActive={sessionActive}
-            onStart={handleStart}
-            onStop={handleStop}
-          />
+        {/* Fork: one horizontal control row — mode, pronunciation, talk, stop */}
+        <div className="flex flex-row flex-wrap items-center justify-center gap-3">
+        {status === 'live' && (
+          <MicModeControl settings={micSettings} onChange={updateMicSettings} />
         )}
+        {status === 'live' && pronunciationAvailable && (
+          <button
+            type="button"
+            onClick={togglePronunciation}
+            aria-pressed={pronunciationOn}
+            className={`text-fl-hint border px-3 py-1 font-mono tracking-widest uppercase transition-colors ${
+              pronunciationOn
+                ? 'border-fl-accent/60 text-fl-accent'
+                : 'border-fl-border text-fl-muted-3 hover:text-fl-fg'
+            }`}
+          >
+            {pronunciationOn ? t('pronunciationOn') : t('pronunciationOff')}
+          </button>
+        )}
+
+          {status === 'live' && micSettings.mode === 'manual' && (
+            <button
+              type="button"
+              onClick={toggleManualRecording}
+              aria-pressed={manualRecording}
+              disabled={assistantTurnActive}
+              className={`px-8 py-3 font-mono text-xs font-bold tracking-widest uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                manualRecording
+                  ? 'bg-fl-error text-fl-fg-bright hover:bg-fl-error-hover animate-pulse'
+                  : 'bg-fl-accent text-fl-accent-fg hover:bg-fl-accent/90'
+              }`}
+            >
+              {manualRecording ? t('tapToSend') : t('tapToTalk')}
+            </button>
+          )}
+          {!(trialMode && status === 'ended') && (
+            <MicButton
+              status={status}
+              sessionActive={sessionActive}
+              onStart={handleStart}
+              onStop={handleStop}
+            />
+          )}
+        </div>
       </div>
+      </div>
+      </div>
+      {selectedWord && tooltipPos && (
+        <WordTooltip
+          word={selectedWord}
+          pos={tooltipPos}
+          saveState={saveState}
+          onSave={() => handleSaveWord()}
+          onDismiss={dismissTooltip}
+          labels={{
+            saveWord: tCommon('saveWord'),
+            wordSaved: tCommon('wordSaved'),
+            wordSaveError: tCommon('wordSaveError'),
+          }}
+        />
+      )}
       <ReviewPrompt
         open={reviewPromptOpen}
         onClose={() => setReviewPromptOpen(false)}

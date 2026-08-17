@@ -115,7 +115,8 @@
     "contact": "Contact",
     "feedback": "Feedback",
     "reviews": "Reviews",
-    "switchLanguage": "Switch language"
+    "switchLanguage": "Switch language",
+    "learnWithLingu": "Learn with Lingu"
   },
   "auth": {
     "login": {
@@ -317,7 +318,9 @@
     "reviewDeleteMessage": "Do you want to delete your review? This action cannot be undone.",
     "reviewDeleteConfirm": "Delete",
     "reviewDeleted": "Review deleted.",
-    "reviewDeleteError": "We could not delete your review. Please try again."
+    "reviewDeleteError": "We could not delete your review. Please try again.",
+    "quotaEditLimits": "Edit limits",
+    "quotaCancel": "Cancel"
   },
   "legal": {
     "terms": {
@@ -608,10 +611,18 @@
     "resume": "Resume",
     "lessonsHeader": "Lessons · {count}",
     "reviewLesson": "Review",
+    "practiceWithLingu": "Practice with Lingu",
+    "useInScenario": "Use it in a scenario",
     "noPlanLabel": "GET STARTED",
     "noPlanTitle": "Create your study plan",
     "noPlanDesc": "Take a quick assessment to discover your level and get a personalized learning path.",
-    "noPlanHint": "Takes about 10 minutes"
+    "noPlanHint": "Takes about 10 minutes",
+    "learnTitle": "Learn with Lingu",
+    "learnSubtitle": "Voice lessons",
+    "learnToday": "Today",
+    "learnCatchUp": "To catch up",
+    "learnNone": "No lessons ready yet — check My Plan.",
+    "preparingToday": "Preparing today's lesson…"
   },
   "lesson": {
     "loading": "Loading lesson...",
@@ -700,7 +711,20 @@
     "tapToHide": "tap to hide",
     "tapToReveal": "tap to reveal",
     "interval": "Interval",
-    "repetitions": "Rep"
+    "repetitions": "Rep",
+    "exportToAnki": "Export to Anki",
+    "ankiDeckName": "Deck name",
+    "ankiCardType": "Card type",
+    "ankiTypeBasic": "Basic (word → translation)",
+    "ankiTypeReversed": "Basic + reversed (both directions)",
+    "ankiTypeCloze": "Cloze (fill the gap in the example)",
+    "ankiIncludeDefinition": "Include definition",
+    "ankiIncludeExample": "Include example sentence",
+    "ankiAiExpand": "AI-expand cards (conjugations, extra examples)",
+    "ankiAiExpandHint": "Slower — each card is expanded by the AI before export.",
+    "ankiExport": "Export",
+    "ankiCancel": "Cancel",
+    "ankiExportFailed": "Export failed — try again."
   },
   "chat": {
     "title": "AI Tutor",
@@ -1109,6 +1133,7 @@
     "errorUnauthorized": "Session expired. Please refresh.",
     "errorMic": "Microphone access denied.",
     "errorVadInit": "Failed to initialize voice recognition. Make sure your browser supports WebAssembly.",
+    "errorLessonNotFound": "That lesson isn't available. Try opening it from your plan again.",
     "warningTimeout": "Session ending in {seconds}s",
     "sessionEnded": "Session ended",
     "tapToStart": "Speak when ready",
@@ -1159,7 +1184,32 @@
       "Weekend plans",
       "Work & career goals",
       "Working from home"
-    ]
+    ],
+    "micModeLabel": "Microphone mode",
+    "micAuto": "Auto",
+    "micManual": "Tap to talk",
+    "micWaitLabel": "Wait",
+    "micWaitDefault": "Default",
+    "micWaitSeconds": "{seconds}s",
+    "tapToTalk": "Tap to talk",
+    "tapToSend": "Tap to send",
+    "pronunciationScore": "Pronunciation {score}/100",
+    "pronunciationWeakWords": "Work on: {words}",
+    "lessonStepProgress": "Step {current} of {total}",
+    "lessonNextSection": "Next section →",
+    "lessonShow": "Show lesson",
+    "lessonHide": "Hide lesson",
+    "lessonCompleted": "Lesson complete!",
+    "lessonCompletionError": "Couldn't save your lesson completion.",
+    "lessonRetry": "Try again",
+    "translate": "Translate",
+    "hideTranslation": "Hide translation",
+    "translationFailed": "Couldn't translate",
+    "addToFlashcards": "Add to flashcards",
+    "flashcardAdded": "Added",
+    "dismissSuggestion": "Dismiss",
+    "pronunciationOn": "Pronunciation: on",
+    "pronunciationOff": "Pronunciation: off"
   },
   "voiceRecorder": {
     "record": "Record",

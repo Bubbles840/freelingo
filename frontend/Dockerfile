@@ -14,7 +14,11 @@ COPY messages/ ./messages/
 # (deps stage generates them but COPY frontend/ . above overwrites public/vad from source)
 RUN node scripts/copy-vad-models.js
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+# Fork: next/font downloads Google Fonts during build; transient fetch
+# failures abort it. Prefer IPv4 and retry once before giving up.
+ENV NODE_OPTIONS=--dns-result-order=ipv4first
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build || (echo "retrying build (flaky font fetch)" && npm run build)
 
 FROM node:25-alpine AS runner
 WORKDIR /app

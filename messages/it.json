@@ -115,7 +115,8 @@
     "contact": "Contatto",
     "feedback": "Feedback",
     "reviews": "Recensioni",
-    "switchLanguage": "Cambia lingua"
+    "switchLanguage": "Cambia lingua",
+    "learnWithLingu": "Impara con Lingu"
   },
   "auth": {
     "login": {
@@ -317,7 +318,9 @@
     "reviewDeleteMessage": "Vuoi eliminare la tua recensione? Questa azione non può essere annullata.",
     "reviewDeleteConfirm": "Elimina",
     "reviewDeleted": "Recensione eliminata.",
-    "reviewDeleteError": "Impossibile eliminare la recensione. Riprova."
+    "reviewDeleteError": "Impossibile eliminare la recensione. Riprova.",
+    "quotaEditLimits": "Modifica limiti",
+    "quotaCancel": "Annulla"
   },
   "legal": {
     "terms": {
@@ -608,10 +611,18 @@
     "resume": "Riprendi",
     "lessonsHeader": "Lezioni · {count}",
     "reviewLesson": "Rivedi",
+    "practiceWithLingu": "Esercitati con Lingu",
+    "useInScenario": "Usalo in una situazione",
     "noPlanLabel": "INIZIA",
     "noPlanTitle": "Crea il tuo piano di studio",
     "noPlanDesc": "Fai una breve valutazione per scoprire il tuo livello e ottenere un percorso di apprendimento personalizzato.",
-    "noPlanHint": "Richiede circa 10 minuti"
+    "noPlanHint": "Richiede circa 10 minuti",
+    "learnTitle": "Impara con Lingu",
+    "learnSubtitle": "Lezioni vocali",
+    "learnToday": "Oggi",
+    "learnCatchUp": "Da recuperare",
+    "learnNone": "Nessuna lezione pronta — vedi Il mio piano.",
+    "preparingToday": "Preparazione della lezione di oggi…"
   },
   "lesson": {
     "loading": "Caricamento lezione...",
@@ -700,7 +711,20 @@
     "tapToHide": "tocca per nascondere",
     "tapToReveal": "tocca per mostrare",
     "interval": "Intervallo",
-    "repetitions": "Rip"
+    "repetitions": "Rip",
+    "exportToAnki": "Esporta in Anki",
+    "ankiDeckName": "Nome del mazzo",
+    "ankiCardType": "Tipo di carta",
+    "ankiTypeBasic": "Base (parola → traduzione)",
+    "ankiTypeReversed": "Base + inversa (entrambe le direzioni)",
+    "ankiTypeCloze": "Cloze (completa l'esempio)",
+    "ankiIncludeDefinition": "Includi definizione",
+    "ankiIncludeExample": "Includi frase di esempio",
+    "ankiAiExpand": "Espandi con IA (coniugazioni, esempi)",
+    "ankiAiExpandHint": "Più lento — l'IA espande ogni carta prima dell'esportazione.",
+    "ankiExport": "Esporta",
+    "ankiCancel": "Annulla",
+    "ankiExportFailed": "Esportazione non riuscita — riprova."
   },
   "chat": {
     "title": "Tutor IA",
@@ -1109,6 +1133,7 @@
     "errorUnauthorized": "Sessione scaduta. Aggiorna la pagina.",
     "errorMic": "Accesso al microfono negato.",
     "errorVadInit": "Errore durante l'inizializzazione del riconoscimento vocale. Verifica che il browser supporti WebAssembly.",
+    "errorLessonNotFound": "Questa lezione non è disponibile. Riaprila dal tuo piano.",
     "warningTimeout": "La sessione termina tra {seconds}s",
     "sessionEnded": "Sessione terminata",
     "tapToStart": "Parla quando sei pronto",
@@ -1159,7 +1184,32 @@
       "Piani per il weekend",
       "Lavoro e obiettivi di carriera",
       "Lavorare da casa"
-    ]
+    ],
+    "micModeLabel": "Modalità microfono",
+    "micAuto": "Automatica",
+    "micManual": "Tocca per parlare",
+    "micWaitLabel": "Attesa",
+    "micWaitDefault": "Predefinita",
+    "micWaitSeconds": "{seconds}s",
+    "tapToTalk": "Tocca per parlare",
+    "tapToSend": "Tocca per inviare",
+    "pronunciationScore": "Pronuncia {score}/100",
+    "pronunciationWeakWords": "Da migliorare: {words}",
+    "lessonStepProgress": "Passo {current} di {total}",
+    "lessonNextSection": "Sezione successiva →",
+    "lessonShow": "Mostra lezione",
+    "lessonHide": "Nascondi lezione",
+    "lessonCompleted": "Lezione completata!",
+    "lessonCompletionError": "Impossibile salvare il completamento della lezione.",
+    "lessonRetry": "Riprova",
+    "translate": "Traduci",
+    "hideTranslation": "Nascondi traduzione",
+    "translationFailed": "Traduzione non riuscita",
+    "addToFlashcards": "Aggiungi alle flashcard",
+    "flashcardAdded": "Aggiunta",
+    "dismissSuggestion": "Ignora",
+    "pronunciationOn": "Pronuncia: sì",
+    "pronunciationOff": "Pronuncia: no"
   },
   "voiceRecorder": {
     "record": "Registra",

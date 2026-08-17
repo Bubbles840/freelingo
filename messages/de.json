@@ -115,7 +115,8 @@
     "contact": "Kontakt",
     "feedback": "Feedback",
     "reviews": "Bewertungen",
-    "switchLanguage": "Sprache wechseln"
+    "switchLanguage": "Sprache wechseln",
+    "learnWithLingu": "Mit Lingu lernen"
   },
   "auth": {
     "login": {
@@ -317,7 +318,9 @@
     "reviewDeleteMessage": "Möchtest du deine Bewertung löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
     "reviewDeleteConfirm": "Löschen",
     "reviewDeleted": "Bewertung gelöscht.",
-    "reviewDeleteError": "Deine Bewertung konnte nicht gelöscht werden. Bitte versuche es erneut."
+    "reviewDeleteError": "Deine Bewertung konnte nicht gelöscht werden. Bitte versuche es erneut.",
+    "quotaEditLimits": "Limits bearbeiten",
+    "quotaCancel": "Abbrechen"
   },
   "legal": {
     "terms": {
@@ -608,10 +611,18 @@
     "resume": "Fortsetzen",
     "lessonsHeader": "Lektionen · {count}",
     "reviewLesson": "Wieder ansehen",
+    "practiceWithLingu": "Mit Lingu üben",
+    "useInScenario": "In einer Szene anwenden",
     "noPlanLabel": "LOS GEHTS",
     "noPlanTitle": "Erstelle deinen Lernplan",
     "noPlanDesc": "Mach eine kurze Einschätzung, um dein Niveau zu entdecken und einen persönlichen Lernplan zu erhalten.",
-    "noPlanHint": "Dauert etwa 10 Minuten"
+    "noPlanHint": "Dauert etwa 10 Minuten",
+    "learnTitle": "Mit Lingu lernen",
+    "learnSubtitle": "Mündliche Lektionen",
+    "learnToday": "Heute",
+    "learnCatchUp": "Zum Aufholen",
+    "learnNone": "Noch keine Lektion bereit — siehe Mein Plan.",
+    "preparingToday": "Die heutige Lektion wird vorbereitet…"
   },
   "lesson": {
     "loading": "Lektion wird geladen...",
@@ -700,7 +711,20 @@
     "tapToHide": "tippen zum ausblenden",
     "tapToReveal": "tippen zum einblenden",
     "interval": "Intervall",
-    "repetitions": "Whlg"
+    "repetitions": "Whlg",
+    "exportToAnki": "Nach Anki exportieren",
+    "ankiDeckName": "Stapelname",
+    "ankiCardType": "Kartentyp",
+    "ankiTypeBasic": "Einfach (Wort → Übersetzung)",
+    "ankiTypeReversed": "Einfach + umgekehrt (beide Richtungen)",
+    "ankiTypeCloze": "Lückentext (im Beispielsatz)",
+    "ankiIncludeDefinition": "Definition einschließen",
+    "ankiIncludeExample": "Beispielsatz einschließen",
+    "ankiAiExpand": "Mit KI erweitern (Konjugationen, Beispiele)",
+    "ankiAiExpandHint": "Langsamer — die KI erweitert jede Karte vor dem Export.",
+    "ankiExport": "Exportieren",
+    "ankiCancel": "Abbrechen",
+    "ankiExportFailed": "Export fehlgeschlagen — versuche es erneut."
   },
   "chat": {
     "title": "KI-Tutor",
@@ -1109,6 +1133,7 @@
     "errorUnauthorized": "Sitzung abgelaufen. Bitte neu laden.",
     "errorMic": "Mikrofonzugriff verweigert.",
     "errorVadInit": "Fehler beim Initialisieren der Spracherkennung. Überprüfe, ob dein Browser WebAssembly unterstützt.",
+    "errorLessonNotFound": "Diese Lektion ist nicht verfügbar. Öffne sie erneut über deinen Plan.",
     "warningTimeout": "Sitzung endet in {seconds}s",
     "sessionEnded": "Sitzung beendet",
     "tapToStart": "Sprich wenn du bereit bist",
@@ -1159,7 +1184,32 @@
       "Wochendpläne",
       "Arbeit und Karriereziele",
       "Homeoffice"
-    ]
+    ],
+    "micModeLabel": "Mikrofonmodus",
+    "micAuto": "Auto",
+    "micManual": "Zum Sprechen tippen",
+    "micWaitLabel": "Wartezeit",
+    "micWaitDefault": "Standard",
+    "micWaitSeconds": "{seconds}s",
+    "tapToTalk": "Tippe zum Sprechen",
+    "tapToSend": "Tippe zum Senden",
+    "pronunciationScore": "Aussprache {score}/100",
+    "pronunciationWeakWords": "Üben: {words}",
+    "lessonStepProgress": "Schritt {current} von {total}",
+    "lessonNextSection": "Nächster Abschnitt →",
+    "lessonShow": "Lektion anzeigen",
+    "lessonHide": "Lektion ausblenden",
+    "lessonCompleted": "Lektion abgeschlossen!",
+    "lessonCompletionError": "Der Lektionsabschluss konnte nicht gespeichert werden.",
+    "lessonRetry": "Erneut versuchen",
+    "translate": "Übersetzen",
+    "hideTranslation": "Übersetzung ausblenden",
+    "translationFailed": "Übersetzung fehlgeschlagen",
+    "addToFlashcards": "Zu den Karteikarten",
+    "flashcardAdded": "Hinzugefügt",
+    "dismissSuggestion": "Verwerfen",
+    "pronunciationOn": "Aussprache: an",
+    "pronunciationOff": "Aussprache: aus"
   },
   "voiceRecorder": {
     "record": "Aufnehmen",

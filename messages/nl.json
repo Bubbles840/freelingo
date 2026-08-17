@@ -115,7 +115,8 @@
     "contact": "Contact",
     "feedback": "Feedback",
     "reviews": "Reviews",
-    "switchLanguage": "Taal wijzigen"
+    "switchLanguage": "Taal wijzigen",
+    "learnWithLingu": "Leer met Lingu"
   },
   "auth": {
     "login": {
@@ -317,7 +318,9 @@
     "reviewDeleteMessage": "Wil je je review verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
     "reviewDeleteConfirm": "Verwijderen",
     "reviewDeleted": "Review verwijderd.",
-    "reviewDeleteError": "Je review kon niet worden verwijderd. Probeer het opnieuw."
+    "reviewDeleteError": "Je review kon niet worden verwijderd. Probeer het opnieuw.",
+    "quotaEditLimits": "Limieten bewerken",
+    "quotaCancel": "Annuleren"
   },
   "legal": {
     "terms": {
@@ -608,10 +611,18 @@
     "resume": "Hervatten",
     "lessonsHeader": "Lessen · {count}",
     "reviewLesson": "Bekijken",
+    "practiceWithLingu": "Oefen met Lingu",
+    "useInScenario": "Gebruik het in een scène",
     "noPlanLabel": "BEGINNEN",
     "noPlanTitle": "Maak je studieplan",
     "noPlanDesc": "Doe een snelle evaluatie om je niveau te ontdekken en een persoonlijk leertraject te krijgen.",
-    "noPlanHint": "Duurt ongeveer 10 minuten"
+    "noPlanHint": "Duurt ongeveer 10 minuten",
+    "learnTitle": "Leer met Lingu",
+    "learnSubtitle": "Spraaklessen",
+    "learnToday": "Vandaag",
+    "learnCatchUp": "In te halen",
+    "learnNone": "Nog geen les klaar — zie Mijn plan.",
+    "preparingToday": "De les van vandaag wordt voorbereid…"
   },
   "lesson": {
     "loading": "Les laden...",
@@ -700,7 +711,20 @@
     "tapToHide": "tik om te verbergen",
     "tapToReveal": "tik om te tonen",
     "interval": "Interval",
-    "repetitions": "Herh"
+    "repetitions": "Herh",
+    "exportToAnki": "Exporteren naar Anki",
+    "ankiDeckName": "Stapelnaam",
+    "ankiCardType": "Kaarttype",
+    "ankiTypeBasic": "Basis (woord → vertaling)",
+    "ankiTypeReversed": "Basis + omgekeerd (beide richtingen)",
+    "ankiTypeCloze": "Invuloefening (in de voorbeeldzin)",
+    "ankiIncludeDefinition": "Definitie opnemen",
+    "ankiIncludeExample": "Voorbeeldzin opnemen",
+    "ankiAiExpand": "Uitbreiden met AI (vervoegingen, voorbeelden)",
+    "ankiAiExpandHint": "Langzamer — de AI breidt elke kaart uit vóór export.",
+    "ankiExport": "Exporteren",
+    "ankiCancel": "Annuleren",
+    "ankiExportFailed": "Export mislukt — probeer opnieuw."
   },
   "chat": {
     "title": "AI-tutor",
@@ -1109,6 +1133,7 @@
     "errorUnauthorized": "Sessie verlopen. Vernieuw de pagina.",
     "errorMic": "Microfoon toegang geweigerd.",
     "errorVadInit": "Initialiseren van spraakherkenning mislukt. Controleer of je browser WebAssembly ondersteunt.",
+    "errorLessonNotFound": "Deze les is niet beschikbaar. Open hem opnieuw vanuit je plan.",
     "warningTimeout": "Sessie eindigt over {seconds}s",
     "sessionEnded": "Sessie beëindigd",
     "tapToStart": "Spreek wanneer je klaar bent",
@@ -1159,7 +1184,32 @@
       "Weekendplannen",
       "Werk en carrièredoelen",
       "Thuiswerken"
-    ]
+    ],
+    "micModeLabel": "Microfoonmodus",
+    "micAuto": "Automatisch",
+    "micManual": "Tik om te praten",
+    "micWaitLabel": "Wachttijd",
+    "micWaitDefault": "Standaard",
+    "micWaitSeconds": "{seconds}s",
+    "tapToTalk": "Tik om te praten",
+    "tapToSend": "Tik om te verzenden",
+    "pronunciationScore": "Uitspraak {score}/100",
+    "pronunciationWeakWords": "Oefenen: {words}",
+    "lessonStepProgress": "Stap {current} van {total}",
+    "lessonNextSection": "Volgende sectie →",
+    "lessonShow": "Toon les",
+    "lessonHide": "Verberg les",
+    "lessonCompleted": "Les voltooid!",
+    "lessonCompletionError": "Kon het voltooien van de les niet opslaan.",
+    "lessonRetry": "Opnieuw proberen",
+    "translate": "Vertalen",
+    "hideTranslation": "Vertaling verbergen",
+    "translationFailed": "Vertalen mislukt",
+    "addToFlashcards": "Toevoegen aan kaarten",
+    "flashcardAdded": "Toegevoegd",
+    "dismissSuggestion": "Negeren",
+    "pronunciationOn": "Uitspraak: aan",
+    "pronunciationOff": "Uitspraak: uit"
   },
   "voiceRecorder": {
     "record": "Opnemen",

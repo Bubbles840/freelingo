@@ -31,6 +31,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/listening', label: tNav('listening') },
     { href: '/reading', label: tNav('reading') },
     { href: '/conversation', label: tNav('conversation') },
+    { href: '/learn', label: tNav('learnWithLingu') },
     { href: '/assessment', label: tNav('assessment') },
   ]
 

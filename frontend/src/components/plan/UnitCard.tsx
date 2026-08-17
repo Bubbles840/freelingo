@@ -20,6 +20,10 @@ interface Props {
   onClick: () => void
   /** When provided and status.active, an EMPEZAR CTA is rendered on the card */
   onStartLesson?: () => void
+  /** Fork: launch today's lesson as a guided voice lesson (shown beside START) */
+  onPracticeLesson?: () => void
+  /** Fork: practise today's lesson in a roleplay scenario (shown beside START) */
+  onRoleplayLesson?: () => void
 }
 
 function StatusIcon({ status }: { status: UnitStatus }): ReactNode {
@@ -39,6 +43,8 @@ export default function UnitCard({
   status,
   onClick,
   onStartLesson,
+  onPracticeLesson,
+  onRoleplayLesson,
 }: Props) {
   const t = useTranslations('plan')
   const tCommon = useTranslations('common')
@@ -123,7 +129,24 @@ export default function UnitCard({
 
       {/* EMPEZAR CTA — only shown on the active unit when a lesson is ready */}
       {status.active && onStartLesson && (
-        <div className="border-fl-fg/30 flex justify-end border-t px-4 py-2.5">
+        <div className="border-fl-fg/30 flex flex-wrap items-center justify-end gap-2 border-t px-4 py-2.5">
+          {/* Fork: voice launch options for today's lesson, beside START */}
+          {onRoleplayLesson && (
+            <button
+              onClick={onRoleplayLesson}
+              className="text-fl-muted-3 hover:text-fl-fg px-3 py-2 font-mono text-xs font-bold tracking-widest uppercase transition-colors"
+            >
+              {t('useInScenario')}
+            </button>
+          )}
+          {onPracticeLesson && (
+            <button
+              onClick={onPracticeLesson}
+              className="border-fl-border text-fl-muted-1 hover:border-fl-border-2 hover:text-fl-fg border px-3 py-2 font-mono text-xs font-bold tracking-widest uppercase transition-colors"
+            >
+              {t('practiceWithLingu')}
+            </button>
+          )}
           <button
             onClick={onStartLesson}
             className="bg-fl-fg text-fl-bg hover:bg-fl-fg/90 px-4 py-2 font-mono text-xs font-bold tracking-widest uppercase transition-colors"

@@ -23,6 +23,8 @@ logging.basicConfig(
 _AVATARS_DIR = "/app/avatars"
 _TTS_PREVIEWS_DIR = "/app/tts_previews"
 from app.routers import (
+    anki,
+    translation,
     admin,
     admin_dashboard_banner,
     assessment,
@@ -51,6 +53,10 @@ from app.routers import (
 )
 from app.routers import config as config_router
 from app.routers import health as health_router
+from app.services.pronunciation_service import (
+    AzurePronunciationService,
+    NullPronunciationService,
+)
 from app.services.stt_service import OpenAISTTService, WhisperSTTService
 from app.services.tts_service import KokoroTTSService, OpenAITTSService
 
@@ -58,6 +64,27 @@ from app.services.tts_service import KokoroTTSService, OpenAITTSService
 def _run_migrations() -> None:
     alembic_cfg = Config("/app/alembic.ini")
     command.upgrade(alembic_cfg, "head")
+
+
+def build_pronunciation_service() -> object:
+    """Select the pronunciation assessment provider (fork feature).
+
+    Defaults to a null provider so the feature is inert unless configured.
+    """
+    if settings.PRONUNCIATION_PROVIDER == "azure":
+        if not settings.AZURE_SPEECH_KEY:
+            raise ValueError(
+                "PRONUNCIATION_PROVIDER=azure requires AZURE_SPEECH_KEY to be set"
+            )
+        if not settings.AZURE_SPEECH_REGION:
+            raise ValueError(
+                "PRONUNCIATION_PROVIDER=azure requires AZURE_SPEECH_REGION to be set"
+            )
+        return AzurePronunciationService(
+            api_key=settings.AZURE_SPEECH_KEY,
+            region=settings.AZURE_SPEECH_REGION,
+        )
+    return NullPronunciationService()
 
 
 @asynccontextmanager
@@ -100,6 +127,8 @@ async def lifespan(app: FastAPI):  # noqa: ANN201
         )
     else:
         app.state.stt_service = WhisperSTTService(settings.STT_BASE_URL)
+
+    app.state.pronunciation_service = build_pronunciation_service()
 
     yield
 
@@ -149,6 +178,8 @@ app.include_router(conversation.router)
 app.include_router(config_router.router)
 app.include_router(contact.router)
 app.include_router(curriculum.router)
+app.include_router(translation.router)
+app.include_router(anki.router)
 app.include_router(dashboard_banner.router)
 app.include_router(feedback.router)
 app.include_router(freemium.router)

@@ -59,6 +59,9 @@ services:
       OPENAI_TTS_VOICE: ${OPENAI_TTS_VOICE:-nova}
       OPENAI_TTS_SPEED: ${OPENAI_TTS_SPEED:-1.0}
       STT_PROVIDER: ${STT_PROVIDER:-local}
+      PRONUNCIATION_PROVIDER: ${PRONUNCIATION_PROVIDER:-none}
+      AZURE_SPEECH_KEY: ${AZURE_SPEECH_KEY:-}
+      AZURE_SPEECH_REGION: ${AZURE_SPEECH_REGION:-}
       STT_BASE_URL: ${STT_BASE_URL:-http://whisper:9000}
       OPENAI_STT_MODEL: ${OPENAI_STT_MODEL:-whisper-1}
       CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000"]}
@@ -116,7 +119,11 @@ services:
       dockerfile: frontend/Dockerfile.dev
     container_name: freelingo-frontend
     restart: unless-stopped
-    command: npm run dev
+    # Fork: Turbopack (Next 16's dev default) fails to resolve its internal
+    # next/font/google module in this containerised dev setup even with
+    # working network ("Can't resolve '@vercel/turbopack-next/internal/…'").
+    # Webpack's font pipeline works; dev is slower but correct.
+    command: npm run dev -- --webpack
     volumes:
       - ./frontend:/app
       - ./messages:/app/messages
@@ -125,6 +132,10 @@ services:
       BACKEND_URL: http://backend:8000
       NEXT_PUBLIC_UMAMI_SCRIPT_URL: ${NEXT_PUBLIC_UMAMI_SCRIPT_URL:-}
       NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
+      # Fork: defensive only — prefer IPv4 for outbound Node fetches (Google
+      # Fonts et al). The decisive fix for the dev font failure is the
+      # --webpack switch on the command above.
+      NODE_OPTIONS: --dns-result-order=ipv4first
     ports:
       - "3000:3000"
     depends_on:

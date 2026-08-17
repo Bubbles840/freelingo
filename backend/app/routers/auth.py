@@ -297,6 +297,24 @@ async def update_me(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    # Fork: learners on a self-hosted install manage their own usage limits.
+    # With the paywall on (hosted mode), only admins may change them.
+    quota_fields = (
+        ("conversation_weekly_sessions", data.conversation_weekly_sessions),
+        ("conversation_daily_minutes", data.conversation_daily_minutes),
+        ("conversation_weekly_minutes", data.conversation_weekly_minutes),
+        ("monthly_tokens_limit", data.monthly_tokens_limit),
+    )
+    if any(value is not None for _, value in quota_fields):
+        if settings.STRIPE_ENABLED and current_user.role != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Usage limits are managed by your plan",
+            )
+        for field_name, value in quota_fields:
+            if value is not None:
+                setattr(current_user, field_name, value)
+
     if data.display_name is not None:
         current_user.display_name = data.display_name
     if data.email is not None and data.email != current_user.email:

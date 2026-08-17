@@ -79,6 +79,49 @@ export interface TurnCompleteMessage {
   turn_id?: number
 }
 
+export interface PronunciationWordScore {
+  word: string
+  score: number
+}
+
+export interface PronunciationMessage {
+  type: 'pronunciation'
+  overall: number
+  fluency: number | null
+  words: PronunciationWordScore[]
+  turn_id?: number
+}
+
+export interface LessonStateStep {
+  title: string
+  status: 'done' | 'current' | 'pending'
+  /** Fork: step kind from the server plan (intro | key_point | vocabulary |
+   * exercise | wrap_up). Absent on older payloads. */
+  kind?: string
+  /** Fork: full question text — present only on the current exercise step. */
+  prompt?: string
+  /** Fork: answer choices — present only on the current exercise step. */
+  options?: string[]
+}
+
+export interface LessonStateMessage {
+  type: 'lesson_state'
+  lesson_id: number
+  step_index: number
+  total: number
+  steps: LessonStateStep[]
+  turn_id?: number
+  /** Optional: absent on older payloads — callers should fall back to a
+   * generic label when it isn't present. */
+  title?: string
+}
+
+export interface LessonCompletedMessage {
+  type: 'lesson_completed'
+  lesson_id: number
+  turn_id?: number
+}
+
 export type WsMessage =
   | TranscriptMessage
   | BargeInMessage
@@ -88,6 +131,9 @@ export type WsMessage =
   | ErrorMessage
   | MemoryUpdatedMessage
   | TurnCompleteMessage
+  | PronunciationMessage
+  | LessonStateMessage
+  | LessonCompletedMessage
 
 // ─── Chat context passed from tutor chat to voice session ────────────────────
 

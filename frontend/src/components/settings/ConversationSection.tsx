@@ -11,7 +11,7 @@ export function ConversationSection({ title }: { title?: string } = {}) {
   const user = useAuthStore((s) => s.user)
   const setUser = useAuthStore((s) => s.setUser)
 
-  const [convMaxDuration, setConvMaxDuration] = useState<900 | 1800>(1800)
+  const [convMaxDuration, setConvMaxDuration] = useState<number>(1800)
   const [convInactivityTimeout, setConvInactivityTimeout] = useState<
     60 | 180 | 300
   >(180)
@@ -23,7 +23,7 @@ export function ConversationSection({ title }: { title?: string } = {}) {
 
   useEffect(() => {
     if (user) {
-      setConvMaxDuration((user.conversation_max_duration as 900 | 1800) || 1800)
+      setConvMaxDuration(user.conversation_max_duration || 1800)
       setConvInactivityTimeout(
         (user.conversation_inactivity_timeout as 60 | 180 | 300) || 180
       )
@@ -70,21 +70,42 @@ export function ConversationSection({ title }: { title?: string } = {}) {
           <label className="text-fl-label text-fl-muted-2 mb-2 block font-mono tracking-widest uppercase">
             {t('conversationMaxDuration')}
           </label>
-          <div className="flex gap-2">
-            {([900, 1800] as const).map((val) => (
+          {/* Fork: free numeric input (5–240 min) with the presets as shortcuts */}
+          <div className="flex flex-wrap items-center gap-2">
+            {([900, 1800, 3600] as const).map((val) => (
               <button
                 key={val}
                 type="button"
                 onClick={() => setConvMaxDuration(val)}
-                className={`flex-1 border py-3 font-mono text-xs tracking-widest uppercase transition-colors ${
+                className={`border px-4 py-3 font-mono text-xs tracking-widest uppercase transition-colors ${
                   convMaxDuration === val
                     ? 'border-fl-accent bg-fl-accent text-fl-accent-fg'
                     : 'border-fl-border text-fl-muted-2 hover:border-fl-border-2 hover:text-fl-fg'
                 }`}
               >
-                {val === 900 ? t('min15') : t('min30')}
+                {val / 60}m
               </button>
             ))}
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={5}
+                max={240}
+                value={Math.round(convMaxDuration / 60)}
+                onChange={(e) => {
+                  const minutes = Number(e.target.value)
+                  if (Number.isFinite(minutes)) {
+                    setConvMaxDuration(
+                      Math.min(240, Math.max(5, Math.round(minutes))) * 60
+                    )
+                  }
+                }}
+                className="border-fl-border bg-fl-surface-2 text-fl-fg w-24 border px-3 py-3 font-mono text-xs"
+              />
+              <span className="text-fl-hint text-fl-muted-3 font-mono tracking-widest uppercase">
+                min
+              </span>
+            </div>
           </div>
         </div>
 

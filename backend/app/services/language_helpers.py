@@ -292,6 +292,15 @@ def get_language_self_name(target_language: str) -> str:
     return info["self_name"] if info else target_language
 
 
+def get_english_name_from_iso(iso_code: str) -> str | None:
+    """Fork: 'es' → 'Spanish', 'fr' → 'French' — None when unknown.
+
+    Used to build TTS accent instructions from the pipeline's ISO 639-1
+    language code (the full 'es-ES' form is not available at that layer).
+    """
+    return _NATIVE_LANGUAGE_NAMES.get(iso_code)
+
+
 def get_iso639(target_language: str) -> str:
     """'en-US' → 'en', 'it-IT' → 'it'"""
     info = _LANGUAGE_INFO.get(target_language)

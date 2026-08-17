@@ -1599,3 +1599,38 @@ async def test_process_no_llm_output_sends_turn_complete() -> None:
 
     types = ws.types()
     assert "turn_complete" in types
+
+
+# ---------------------------------------------------------------------------
+# keepalive client_event (fork: mic controls)
+# ---------------------------------------------------------------------------
+
+
+class _ScriptedWS(FakeWS):
+    """FakeWS whose receive() yields a fixed sequence of frames."""
+
+    def __init__(self, frames):
+        super().__init__()
+        self._frames = list(frames)
+
+    async def receive(self) -> dict:
+        if self._frames:
+            return self._frames.pop(0)
+        return {"type": "websocket.disconnect"}
+
+
+@pytest.mark.asyncio
+async def test_keepalive_client_event_resets_inactivity():
+    pipeline = _make_pipeline()
+    ws = _ScriptedWS(
+        [
+            {"text": '{"type": "client_event", "event": "keepalive"}'},
+            {"type": "websocket.disconnect"},
+        ]
+    )
+    pipeline._last_activity = time.monotonic() - 1000
+    pipeline._inactivity_warning_sent = True
+    with patch.object(pipeline, "_greet", new=AsyncMock()):
+        await pipeline.run(ws)
+    assert time.monotonic() - pipeline._last_activity < 5
+    assert pipeline._inactivity_warning_sent is False

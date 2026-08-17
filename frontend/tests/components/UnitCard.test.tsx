@@ -303,6 +303,8 @@ function renderUnitDrawer(
     }>
     onClose: () => void
     onStartLesson: (lessonId: number) => void
+    onPracticeLesson: (lessonId: number) => void
+    onRoleplayLesson: (lessonId: number) => void
   }> = {}
 ) {
   const props = {
@@ -310,6 +312,8 @@ function renderUnitDrawer(
     lessons: overrides.lessons ?? mockLessons,
     onClose: overrides.onClose ?? vi.fn(),
     onStartLesson: overrides.onStartLesson ?? vi.fn(),
+    onPracticeLesson: overrides.onPracticeLesson ?? vi.fn(),
+    onRoleplayLesson: overrides.onRoleplayLesson ?? vi.fn(),
   }
   const result = render(<UnitDrawer {...props} />)
   return { ...result, props }

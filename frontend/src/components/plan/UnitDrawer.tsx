@@ -19,6 +19,8 @@ interface Props {
   lessons: Lesson[]
   onClose: () => void
   onStartLesson: (lessonId: number) => void
+  onPracticeLesson: (lessonId: number) => void
+  onRoleplayLesson: (lessonId: number) => void
 }
 
 export default function UnitDrawer({
@@ -26,6 +28,8 @@ export default function UnitDrawer({
   lessons,
   onClose,
   onStartLesson,
+  onPracticeLesson,
+  onRoleplayLesson,
 }: Props) {
   const t = useTranslations('plan')
   const tCommon = useTranslations('common')
@@ -121,7 +125,7 @@ export default function UnitDrawer({
               lessons.map((lesson, i) => (
                 <div
                   key={lesson.id ?? i}
-                  className={`flex items-center gap-3 px-6 py-4 transition-colors ${lesson.action ? 'hover:bg-fl-surface-2' : ''}`}
+                  className={`flex flex-wrap items-center gap-3 gap-y-2 px-6 py-4 transition-colors ${lesson.action ? 'hover:bg-fl-surface-2' : ''}`}
                 >
                   <span
                     className={`w-4 shrink-0 font-mono text-base ${lesson.completed ? 'text-fl-fg' : 'text-fl-muted-3'}`}
@@ -141,16 +145,43 @@ export default function UnitDrawer({
                     </p>
                   </div>
                   {lesson.id != null && lesson.action && (
-                    <button
-                      onClick={() => onStartLesson(lesson.id!)}
-                      className="text-fl-label text-fl-bg bg-fl-fg hover:bg-fl-fg/90 min-w-24 shrink-0 px-3 py-2 font-mono font-bold tracking-widest uppercase transition-colors"
-                    >
-                      {lesson.action === 'review'
-                        ? t('reviewLesson')
-                        : lesson.action === 'continue'
-                          ? t('resume')
-                          : `${tCommon('start')} →`}
-                    </button>
+                    // Fork: `basis-full` forces the action buttons onto their
+                    // own row — as flex siblings of the `min-w-0 flex-1` title
+                    // they would crush it to a sliver instead of wrapping.
+                    // `pl-7` aligns them under the title (icon w-4 + gap-3).
+                    <div className="flex basis-full flex-wrap items-center gap-2 pl-7">
+                      <button
+                        onClick={() => onStartLesson(lesson.id!)}
+                        className="text-fl-label text-fl-bg bg-fl-fg hover:bg-fl-fg/90 min-w-24 shrink-0 px-3 py-2 font-mono font-bold tracking-widest uppercase transition-colors"
+                      >
+                        {lesson.action === 'review'
+                          ? t('reviewLesson')
+                          : lesson.action === 'continue'
+                            ? t('resume')
+                            : `${tCommon('start')} →`}
+                      </button>
+                      {/* Fork (guided lessons): voice practice sits behind the
+                          same gate as the primary action — a lesson upstream
+                          offers no action for (generated, but not today's and
+                          not in progress) must not be completable by voice,
+                          which would write XP and advance the plan early. */}
+                      <button
+                        onClick={() => onPracticeLesson(lesson.id!)}
+                        className="text-fl-label border-fl-border text-fl-muted-1 hover:border-fl-border-2 hover:text-fl-fg min-w-24 shrink-0 border px-3 py-2 font-mono font-bold tracking-widest uppercase transition-colors"
+                      >
+                        {t('practiceWithLingu')}
+                      </button>
+                      {/* Fork (roleplay): tertiary/quiet action — same launch
+                          gate as the two buttons above (see comment on the
+                          practice button), but visually de-emphasised since
+                          it's a less common path than start/resume/practice. */}
+                      <button
+                        onClick={() => onRoleplayLesson(lesson.id!)}
+                        className="text-fl-label text-fl-muted-3 hover:text-fl-fg min-w-24 shrink-0 px-3 py-2 font-mono font-bold tracking-widest uppercase transition-colors"
+                      >
+                        {t('useInScenario')}
+                      </button>
+                    </div>
                   )}
                 </div>
               ))
